@@ -15,6 +15,7 @@ import { Edit, Inbox, Star, Settings, PanelLeft, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ComposeDialog } from '@/components/mail/compose-dialog';
+import { MailProvider } from '@/contexts/mail-context';
 
 function BottomNavBar() {
   const pathname = usePathname();
@@ -34,9 +35,8 @@ function BottomNavBar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex flex-col items-center gap-1 p-2 min-w-0 w-1/4 ${
-                pathname === item.href ? 'text-primary' : 'text-muted-foreground'
-              }`}
+              className={`flex flex-col items-center gap-1 p-2 min-w-0 w-1/4 ${pathname === item.href ? 'text-primary' : 'text-muted-foreground'
+                }`}
             >
               <item.icon className="h-5 w-5" />
               <span className="text-xs truncate">{item.name}</span>
@@ -56,9 +56,8 @@ function BottomNavBar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex flex-col items-center gap-1 p-2 min-w-0 w-1/4 ${
-                pathname === item.href ? 'text-primary' : 'text-muted-foreground'
-              }`}
+              className={`flex flex-col items-center gap-1 p-2 min-w-0 w-1/4 ${pathname === item.href ? 'text-primary' : 'text-muted-foreground'
+                }`}
             >
               <item.icon className="h-5 w-5" />
               <span className="text-xs truncate">{item.name}</span>
@@ -78,38 +77,38 @@ function DashboardLayoutContent({
 }) {
   const { toggleSidebar } = useSidebar();
   return (
-      <>
-        <div className="md:hidden flex flex-col h-screen w-full">
-          <main className="flex-1 overflow-auto pb-16">{children}</main>
-          <BottomNavBar />
-        </div>
-        <div className="hidden md:flex h-screen w-full">
-          <Sidebar
-            collapsible="icon"
-            className="border-r border-sidebar-border bg-sidebar"
-          >
-             <div className="flex items-center justify-between p-4">
-              <div className="flex-1">
-                <AppLogo />
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 [&_span]:hidden group-data-[state=expanded]:[&_span]:inline-block"
-                onClick={toggleSidebar}
-              >
-                <PanelLeft className="h-4 w-4" />
-              </Button>
+    <>
+      <div className="md:hidden flex flex-col h-screen w-full">
+        <main className="flex-1 overflow-auto pb-16">{children}</main>
+        <BottomNavBar />
+      </div>
+      <div className="hidden md:flex h-screen w-full">
+        <Sidebar
+          collapsible="icon"
+          className="border-r border-sidebar-border bg-sidebar"
+        >
+          <div className="flex items-center justify-between p-4">
+            <div className="flex-1">
+              <AppLogo />
             </div>
-            <SidebarContent>
-              <SidebarNav />
-            </SidebarContent>
-          </Sidebar>
-          <SidebarInset className="flex-1 w-full">
-            <main className="h-full w-full overflow-auto">{children}</main>
-          </SidebarInset>
-        </div>
-      </>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 [&_span]:hidden group-data-[state=expanded]:[&_span]:inline-block"
+              onClick={toggleSidebar}
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+          </div>
+          <SidebarContent>
+            <SidebarNav />
+          </SidebarContent>
+        </Sidebar>
+        <SidebarInset className="flex-1 w-full">
+          <main className="h-full w-full overflow-auto">{children}</main>
+        </SidebarInset>
+      </div>
+    </>
   );
 }
 
@@ -119,8 +118,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
-      <DashboardLayoutContent>{children}</DashboardLayoutContent>
-    </SidebarProvider>
+    <MailProvider>
+      <SidebarProvider>
+        <DashboardLayoutContent>{children}</DashboardLayoutContent>
+      </SidebarProvider>
+    </MailProvider>
   );
 }

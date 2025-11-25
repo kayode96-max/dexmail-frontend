@@ -36,9 +36,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import Link from 'next/link';
-import { mailService } from '@/lib/mail-service';
-import { useAccount } from 'wagmi';
-import { useAuth } from '@/contexts/auth-context';
+import { useMail } from '@/contexts/mail-context';
 
 function Header() {
   return (
@@ -145,78 +143,48 @@ function MobileHeader() {
   );
 }
 
-export function MailComponent({ mails: initialMails }: { mails: Mail[] }) {
-  const [mails, setMails] = useState<Mail[]>([]);
+export function MailComponent({
+  mails: initialMails,
+  category = 'all'
+}: {
+  mails: Mail[];
+  category?: 'all' | 'read' | 'unread' | 'sent' | 'drafts' | 'spam' | 'archive' | 'trash';
+}) {
+  const { mails, isLoading } = useMail();
   const [selectedMailId, setSelectedMailId] = React.useState<string | null>(null);
   const [selectedMailIds, setSelectedMailIds] = React.useState<string[]>([]);
-  const [activeTab, setActiveTab] = React.useState<'inbox' | 'sent'>('inbox');
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasError, setHasError] = useState(false);
   const isMobile = useIsMobile();
-  const { address, isConnected } = useAccount();
-  const { user } = useAuth();
 
-  useEffect(() => {
-    const fetchMails = async () => {
-      // Only fetch if user is authenticated and has an email
-      if (!isConnected || !address || !user?.email) {
-        // Show initial mails if not connected
-        setMails(initialMails);
-        return;
+  // Use context mails if available, otherwise use initial mails
+  const displayMails = mails.length > 0 ? mails : initialMails;
+
+  const selectedMail = displayMails.find((item) => item.id === selectedMailId);
+
+  // Filter mails based on category
+  const filteredMails = React.useMemo(() => {
+    return displayMails.filter((mail) => {
+      switch (category) {
+        case 'all':
+          return mail.status === 'inbox';
+        case 'read':
+          return mail.status === 'inbox' && mail.read;
+        case 'unread':
+          return mail.status === 'inbox' && !mail.read;
+        case 'sent':
+          return mail.status === 'sent';
+        case 'drafts':
+          return mail.status === 'draft';
+        case 'spam':
+          return mail.status === 'spam';
+        case 'archive':
+          return mail.status === 'archive';
+        case 'trash':
+          return mail.status === 'trash';
+        default:
+          return true;
       }
-
-      setIsLoading(true);
-      setHasError(false);
-      try {
-        console.log('[MailComponent] Fetching inbox for:', user.email);
-        // Use user's email instead of wallet address
-        const fetchedMails = await mailService.getInbox(user.email);
-
-        console.log('[MailComponent] Fetched mails:', fetchedMails.length);
-
-        const mappedMails: Mail[] = fetchedMails.map(m => {
-          // Convert Unix timestamp (seconds) to JavaScript Date (milliseconds)
-          const timestamp = parseInt(m.timestamp, 10) * 1000;
-          const dateStr = new Date(timestamp).toISOString();
-
-          return {
-            id: m.messageId,
-            name: m.from, // Simplify for now
-            email: m.from,
-            subject: m.subject,
-            text: (m.body || '').substring(0, 100) + '...',
-            date: dateStr,
-            read: false,
-            labels: [],
-            status: 'inbox',
-            body: m.body || '',
-            hasCryptoTransfer: m.hasCryptoTransfer
-          };
-        });
-
-        // Only show fetched mails from blockchain (no mock data)
-        setMails(mappedMails);
-      } catch (error) {
-        console.error('[MailComponent] Failed to fetch mails:', error);
-        setHasError(true);
-        // Show empty on error
-        setMails([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (activeTab === 'inbox') {
-      fetchMails();
-    }
-  }, [isConnected, address, user?.email, activeTab, initialMails]);
-
-  const selectedMail = mails.find((item) => item.id === selectedMailId);
-
-  const filteredMails = mails.filter((mail) => {
-    if (activeTab === 'sent') return mail.status === 'sent';
-    return mail.status === 'inbox';
-  });
+    });
+  }, [displayMails, category]);
 
   const handleSelectMail = (mail: Mail) => {
     setSelectedMailId(mail.id);
@@ -239,38 +207,6 @@ export function MailComponent({ mails: initialMails }: { mails: Mail[] }) {
       <div className="flex flex-col h-full w-full bg-background">
         <MobileHeader />
         <div className="mt-16 flex-1 flex flex-col">
-          {!selectedMailId && (
-            <div className="p-4">
-              <div className="flex items-baseline justify-between">
-                <h1 className="text-4xl font-bold">Inbox</h1>
-              </div>
-              <div className="mt-4 flex justify-start">
-                <div className="inline-flex items-center gap-2 rounded-full bg-muted p-1">
-                  <Button
-                    onClick={() => setActiveTab('inbox')}
-                    variant={activeTab === 'inbox' ? 'secondary' : 'ghost'}
-                    className={cn(
-                      'rounded-full',
-                      activeTab === 'inbox' && 'bg-primary/10 text-primary hover:bg-primary/20'
-                    )}
-                  >
-                    All Mail
-                  </Button>
-                  <Button
-                    onClick={() => setActiveTab('sent')}
-                    variant={activeTab === 'sent' ? 'secondary' : 'ghost'}
-                    className={cn(
-                      'rounded-full',
-                      activeTab === 'sent' && 'bg-primary/10 text-primary hover:bg-primary/20'
-                    )}
-                  >
-                    All Sent
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="flex-1 w-full">
             {isLoading && !selectedMailId ? (
               <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>

@@ -20,6 +20,17 @@ export interface SendEmailResponse {
   key: string;
 }
 
+export interface EmailStatus {
+  read: boolean;
+  spam: boolean;
+  archived: boolean;
+  deleted: boolean;
+  draft: boolean;
+}
+
+const EMAIL_STATUS_KEY = 'dexmail_email_status';
+
+
 class MailService {
   async sendEmail(data: SendEmailData): Promise<SendEmailResponse> {
     // 1. Upload to IPFS via API route
@@ -239,7 +250,101 @@ class MailService {
   }
 
   async getSent(email: string): Promise<EmailMessage[]> {
-    return [];
+    try {
+      console.log(`[MailService] Fetching sent emails for: ${email}`);
+
+      // Get the user's wallet address from their email
+      const { getAccount } = await import('@wagmi/core');
+      const account = getAccount(wagmiConfig);
+
+      if (!account.address) {
+        console.log('[MailService] No wallet connected');
+        return [];
+      }
+
+      // Query MailSent events where sender is the user's address
+      const { getPublicClient } = await import('@wagmi/core');
+      const publicClient = getPublicClient(wagmiConfig);
+
+      if (!publicClient) {
+        console.log('[MailService] No public client available');
+        return [];
+      }
+
+      // Get current block number
+      const currentBlock = await publicClient.getBlockNumber();
+
+      // Query last 50,000 blocks to stay within RPC limits
+      // This should cover approximately the last few days on Base Sepolia
+      const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+
+      console.log(`[MailService] Querying MailSent events from block ${fromBlock} to ${currentBlock}`);
+
+      // Get MailSent events from the contract
+      const logs = await publicClient.getLogs({
+        address: BASEMAILER_ADDRESS,
+        event: {
+          type: 'event',
+          name: 'MailSent',
+          inputs: [
+            { type: 'uint256', name: 'mailId', indexed: true },
+            { type: 'address', name: 'sender', indexed: true },
+            { type: 'string', name: 'recipient' },
+            { type: 'bytes32', name: 'cid' }
+          ]
+        },
+        args: {
+          sender: account.address
+        },
+        fromBlock: fromBlock,
+        toBlock: currentBlock
+      });
+
+      console.log(`[MailService] Found ${logs.length} sent mail event(s)`);
+
+      const messages: EmailMessage[] = [];
+
+      for (const log of logs) {
+        try {
+          const mailId = log.args.mailId as bigint;
+          const recipient = log.args.recipient as string;
+          const cidHash = log.args.cid as string;
+
+          // Get full mail details from contract
+          const mail = await readContract(wagmiConfig, {
+            address: BASEMAILER_ADDRESS,
+            abi: baseMailerAbi,
+            functionName: 'getMail',
+            args: [mailId]
+          }) as any;
+
+          // Fetch email content from IPFS
+          const ipfsContent = await this.fetchEmailFromIPFS(cidHash);
+
+          const subject = ipfsContent?.subject || 'Sent Email';
+          const body = ipfsContent?.body || '';
+
+          messages.push({
+            messageId: mailId.toString(),
+            from: email, // User's email
+            to: [recipient],
+            subject: subject,
+            body: body,
+            timestamp: mail.timestamp.toString(),
+            hasCryptoTransfer: mail.hasCrypto,
+            ipfsCid: cidHash
+          });
+        } catch (mailError) {
+          console.error(`[MailService] Error processing sent mail:`, mailError);
+        }
+      }
+
+      console.log(`[MailService] Successfully fetched ${messages.length} sent message(s)`);
+      return messages.reverse(); // Most recent first
+    } catch (error) {
+      console.error('[MailService] Error fetching sent emails:', error);
+      return [];
+    }
   }
 
   async getMessage(messageId: string, email: string): Promise<EmailMessage> {
@@ -265,6 +370,77 @@ class MailService {
   async deleteMessage(messageId: string, email: string): Promise<{ success: boolean; messageId: string }> {
     return { success: true, messageId };
   }
+
+  // Email Status Management Methods
+  private getStatusMap(): Record<string, EmailStatus> {
+    if (typeof window === 'undefined') return {};
+    const stored = localStorage.getItem(EMAIL_STATUS_KEY);
+    return stored ? JSON.parse(stored) : {};
+  }
+
+  private saveStatusMap(statusMap: Record<string, EmailStatus>): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(EMAIL_STATUS_KEY, JSON.stringify(statusMap));
+  }
+
+  getEmailStatus(messageId: string): EmailStatus {
+    const statusMap = this.getStatusMap();
+    return statusMap[messageId] || {
+      read: false,
+      spam: false,
+      archived: false,
+      deleted: false,
+      draft: false
+    };
+  }
+
+  updateEmailStatus(messageId: string, status: Partial<EmailStatus>): void {
+    const statusMap = this.getStatusMap();
+    const currentStatus = this.getEmailStatus(messageId);
+    statusMap[messageId] = { ...currentStatus, ...status };
+    this.saveStatusMap(statusMap);
+  }
+
+  markAsRead(messageId: string): void {
+    this.updateEmailStatus(messageId, { read: true });
+  }
+
+  markAsUnread(messageId: string): void {
+    this.updateEmailStatus(messageId, { read: false });
+  }
+
+  moveToSpam(messageId: string): void {
+    this.updateEmailStatus(messageId, { spam: true, archived: false, deleted: false });
+  }
+
+  removeFromSpam(messageId: string): void {
+    this.updateEmailStatus(messageId, { spam: false });
+  }
+
+  moveToArchive(messageId: string): void {
+    this.updateEmailStatus(messageId, { archived: true, spam: false, deleted: false });
+  }
+
+  removeFromArchive(messageId: string): void {
+    this.updateEmailStatus(messageId, { archived: false });
+  }
+
+  moveToTrash(messageId: string): void {
+    this.updateEmailStatus(messageId, { deleted: true, spam: false, archived: false });
+  }
+
+  restoreFromTrash(messageId: string): void {
+    this.updateEmailStatus(messageId, { deleted: false });
+  }
+
+  markAsDraft(messageId: string): void {
+    this.updateEmailStatus(messageId, { draft: true });
+  }
+
+  removeDraftStatus(messageId: string): void {
+    this.updateEmailStatus(messageId, { draft: false });
+  }
+
 }
 
 export const mailService = new MailService();

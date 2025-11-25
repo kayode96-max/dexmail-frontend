@@ -12,6 +12,9 @@ import {
   ReplyAll,
   Trash,
   Send,
+  Mail as MailIcon,
+  MailOpen,
+  AlertCircle,
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 
@@ -28,6 +31,8 @@ import {
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Textarea } from '../ui/textarea';
+import { useMail } from '@/contexts/mail-context';
+import { useEffect } from 'react';
 
 interface MailDisplayProps {
   mail: Mail | null;
@@ -36,6 +41,7 @@ interface MailDisplayProps {
 
 export function MailDisplay({ mail, onBack }: MailDisplayProps) {
   const isMobile = useIsMobile();
+  const { markAsRead, markAsUnread, moveToArchive, moveToSpam, moveToTrash, getEmailStatus } = useMail();
 
   if (!mail) {
     return (
@@ -45,6 +51,42 @@ export function MailDisplay({ mail, onBack }: MailDisplayProps) {
       </div>
     );
   }
+
+  const emailStatus = getEmailStatus(mail.id);
+
+  const handleMarkAsRead = () => {
+    if (emailStatus.read) {
+      markAsUnread(mail.id);
+    } else {
+      markAsRead(mail.id);
+    }
+  };
+
+  const handleArchive = () => {
+    moveToArchive(mail.id);
+    if (onBack) onBack();
+  };
+
+  const handleSpam = () => {
+    moveToSpam(mail.id);
+    if (onBack) onBack();
+  };
+
+  const handleDelete = () => {
+    moveToTrash(mail.id);
+    if (onBack) onBack();
+  };
+
+  // Automatically mark as read when email is opened
+  useEffect(() => {
+    if (mail && !emailStatus.read) {
+      // Mark as read after a short delay to ensure user actually viewed it
+      const timer = setTimeout(() => {
+        markAsRead(mail.id);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [mail?.id]);
 
   const userAvatar = PlaceHolderImages.find(
     (img: any) => img.id === 'user-avatar-1'
@@ -63,7 +105,16 @@ export function MailDisplay({ mail, onBack }: MailDisplayProps) {
           <TooltipProvider delayDuration={0}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={!mail}>
+                <Button variant="ghost" size="icon" onClick={handleMarkAsRead}>
+                  {emailStatus.read ? <MailOpen className="h-4 w-4" /> : <MailIcon className="h-4 w-4" />}
+                  <span className="sr-only">{emailStatus.read ? 'Mark as Unread' : 'Mark as Read'}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{emailStatus.read ? 'Mark as Unread' : 'Mark as Read'}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={handleArchive}>
                   <Archive className="h-4 w-4" />
                   <span className="sr-only">Archive</span>
                 </Button>
@@ -72,16 +123,16 @@ export function MailDisplay({ mail, onBack }: MailDisplayProps) {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={!mail}>
-                  <Clock className="h-4 w-4" />
-                  <span className="sr-only">Snooze</span>
+                <Button variant="ghost" size="icon" onClick={handleSpam}>
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="sr-only">Mark as Spam</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Snooze</TooltipContent>
+              <TooltipContent>Mark as Spam</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={!mail}>
+                <Button variant="ghost" size="icon" onClick={handleDelete}>
                   <Trash className="h-4 w-4" />
                   <span className="sr-only">Delete</span>
                 </Button>

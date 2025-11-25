@@ -26,22 +26,19 @@ import {
 import { Badge } from './ui/badge';
 import { UserNav } from './user-nav';
 import { Input } from './ui/input';
-import { mails } from '@/lib/data';
 import { cn } from '@/lib/utils';
+import { useMailCounts } from '@/hooks/use-mail-counts';
 
 export function SidebarNav() {
   const pathname = usePathname();
-
-  const unreadCount = mails.filter(
-    (mail) => mail.status === 'inbox' && !mail.read
-  ).length;
+  const counts = useMailCounts();
 
   const mainLinks = [
-    { name: 'Sent', href: '/dashboard/sent', icon: Send },
-    { name: 'Drafts', href: '/dashboard/drafts', icon: FileText, count: 9 },
-    { name: 'Spam', href: '/dashboard/spam', icon: Users },
-    { name: 'Archive', href: '/dashboard/archive', icon: Archive },
-    { name: 'Trash', href: '/dashboard/trash', icon: Trash2 },
+    { name: 'Sent', href: '/dashboard/sent', icon: Send, count: counts.sent },
+    { name: 'Drafts', href: '/dashboard/drafts', icon: FileText, count: counts.drafts },
+    { name: 'Spam', href: '/dashboard/spam', icon: Users, count: counts.spam },
+    { name: 'Archive', href: '/dashboard/archive', icon: Archive, count: counts.archive },
+    { name: 'Trash', href: '/dashboard/trash', icon: Trash2, count: counts.trash },
   ];
 
   const labelLinks = [
@@ -59,15 +56,17 @@ export function SidebarNav() {
     {
       name: 'All Messages',
       href: '/dashboard',
+      count: counts.all,
     },
     {
       name: 'Already Read',
       href: '/dashboard/read',
+      count: counts.read,
     },
     {
       name: 'Unread',
       href: '/dashboard/unread',
-      count: unreadCount,
+      count: counts.unread,
     },
   ];
 
@@ -98,7 +97,7 @@ export function SidebarNav() {
               className={cn(
                 'group flex items-center justify-between  px-3 py-1.5 text-sm text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
                 pathname === item.href &&
-                  'bg-sidebar-accent font-medium text-sidebar-accent-foreground border-l-2 border-primary'
+                'bg-sidebar-accent font-medium text-sidebar-accent-foreground border-l-2 border-primary'
               )}
             >
               <span className="truncate">{item.name}</span>
@@ -122,6 +121,14 @@ export function SidebarNav() {
             <Link href="/dashboard/claim" className="w-full">
               <Gift />
               <span>Claim</span>
+              {counts.claim > 0 && (
+                <Badge
+                  variant="secondary"
+                  className="ml-auto group-data-[collapsible=icon]:hidden"
+                >
+                  {counts.claim}
+                </Badge>
+              )}
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -135,7 +142,7 @@ export function SidebarNav() {
               <Link href={link.href} className="w-full">
                 <link.icon />
                 <span>{link.name}</span>
-                {link.count && (
+                {link.count && link.count > 0 && (
                   <Badge
                     variant="secondary"
                     className="ml-auto group-data-[collapsible=icon]:hidden"
