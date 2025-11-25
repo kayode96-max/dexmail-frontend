@@ -16,9 +16,21 @@ import {
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { ChevronsUpDown } from 'lucide-react';
 import Link from 'next/link';
+import { useAccount } from 'wagmi';
+import { useAuth } from '@/contexts/auth-context';
 
 export function UserNav() {
   const userAvatar = PlaceHolderImages.find(img => img.id === 'user-avatar-1');
+  const { address } = useAccount();
+  const { user } = useAuth();
+
+  // Slice wallet address to show first 6 and last 4 characters
+  const slicedAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : 'Not Connected';
+
+  const displayEmail = user?.email || 'user@example.com';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -28,9 +40,9 @@ export function UserNav() {
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <div className="hidden text-left group-data-[state=expanded]:inline-block">
-            <p className="text-sm font-medium leading-none">Judha Maygustya</p>
+            <p className="text-sm font-medium leading-none">{slicedAddress}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              judha.design@gmail.com
+              {displayEmail}
             </p>
           </div>
           <ChevronsUpDown className="ml-auto hidden h-4 w-4 text-muted-foreground group-data-[state=expanded]:inline-block" />
@@ -39,9 +51,9 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">User</p>
+            <p className="text-sm font-medium leading-none">{slicedAddress}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              user@example.com
+              {displayEmail}
             </p>
           </div>
         </DropdownMenuLabel>

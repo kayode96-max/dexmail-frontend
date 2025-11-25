@@ -276,7 +276,7 @@ class MailService {
 
       // Query last 50,000 blocks to stay within RPC limits
       // This should cover approximately the last few days on Base Sepolia
-      const fromBlock = currentBlock > 50000n ? currentBlock - 50000n : 0n;
+      const fromBlock = currentBlock > BigInt(50000) ? currentBlock - BigInt(50000) : BigInt(0);
 
       console.log(`[MailService] Querying MailSent events from block ${fromBlock} to ${currentBlock}`);
 
