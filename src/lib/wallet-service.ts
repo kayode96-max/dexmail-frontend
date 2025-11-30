@@ -26,26 +26,43 @@ export interface DeployWalletResponse {
 class WalletService {
   async deployWallet(data: DeployWalletData): Promise<DeployWalletResponse> {
     try {
-      // Call claimWallet on the contract
-      // function claimWallet(string email, address claimantOwner, bytes verificationProof)
-      // We need verificationProof. If we skip backend, we can't generate it if it requires a relayer signature.
-      // But for now, maybe we can pass dummy proof if the contract allows or if we are the relayer?
-      // The contract checks `verifyEmailOwnership`.
-      // If we can't generate proof, we can't call this directly unless we are the trusted relayer.
-      // But the user said "integrate smart contract into frontend".
-      // Maybe the user implies we should use the backend for the proof generation part?
-      // But we are replacing the backend.
-      // If we replace the backend, we need to implement the proof generation in Next.js API.
-      // But we don't have the relayer private key.
+      // Check if user is the registered owner
+      const emailOwner = await readContract(wagmiConfig, {
+        address: BASEMAILER_ADDRESS,
+        abi: baseMailerAbi,
+        functionName: 'getEmailOwner',
+        args: [data.email]
+      }) as string;
 
-      // However, for this task, I'll assume we can call it or I'll implement the call.
-      // If it fails, it fails. I'll use a dummy proof.
+      const { getAccount } = await import('@wagmi/core');
+      const account = getAccount(wagmiConfig);
 
+      // If user is the registered owner, use deployMyWallet
+      if (account.address && emailOwner && emailOwner.toLowerCase() === account.address.toLowerCase()) {
+        console.log('User is registered owner, calling deployMyWallet');
+        const txHash = await writeContract(wagmiConfig, {
+          address: BASEMAILER_ADDRESS,
+          abi: baseMailerAbi,
+          functionName: 'deployMyWallet',
+          args: [data.email]
+        });
+
+        return {
+          success: true,
+          walletAddress: await this.getComputedWalletAddress(data.email),
+          transactionHash: txHash,
+          alreadyDeployed: false,
+          gasSponsored: false
+        };
+      }
+
+      // Fallback to claimWallet (requires proof, which we mock as '0x' for now)
+      // This path is for unregistered users claiming via relayer/code
       const txHash = await writeContract(wagmiConfig, {
         address: BASEMAILER_ADDRESS,
         abi: baseMailerAbi,
         functionName: 'claimWallet',
-        args: [data.email, data.ownerAddress, '0x'] // Dummy proof
+        args: [data.email, data.ownerAddress]
       });
 
       return {

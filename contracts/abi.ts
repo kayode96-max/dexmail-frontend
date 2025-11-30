@@ -15,7 +15,7 @@ export type BaseMailerEventName =
   | 'Paused'
   | 'RelayerAuthorized'
   | 'TransferCooldownUpdated'
-  | 'TrustedRelayerUpdated'
+
   | 'Unpaused'
   | 'WalletClaimed'
   | 'WalletCreated';

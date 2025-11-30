@@ -144,7 +144,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     mapping(address => bool) public isWalletDeployed;
     
     // Trusted relayer for email verification
-    address public trustedRelayer;
+
     
     // Gas sponsorship
     mapping(address => bool) public authorizedRelayers;
@@ -163,7 +163,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     event WalletCreated(bytes32 indexed emailHash, address walletAddress);
     event WalletClaimed(bytes32 indexed emailHash, address walletAddress, address indexed claimant);
     event RelayerAuthorized(address indexed relayer, bool authorized);
-    event TrustedRelayerUpdated(address indexed oldRelayer, address indexed newRelayer);
+
     event TransferCooldownUpdated(uint256 newCooldown);
     
     error EmailTaken();
@@ -194,11 +194,8 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         _;
     }
     
-    constructor(address _trustedRelayer, address _initialOwner) Ownable(_initialOwner) {
-        if (_trustedRelayer == address(0)) revert InvalidAddress();
-        trustedRelayer = _trustedRelayer;
+    constructor(address _initialOwner) Ownable(_initialOwner) {
         authorizedRelayers[_initialOwner] = true;
-        authorizedRelayers[_trustedRelayer] = true;
     }
     
     // ============ EMAIL REGISTRATION ============
@@ -279,6 +276,21 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     
     function computeWalletHash(string calldata email) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(email));
+    }
+    
+    /**
+     * @notice Check if a recipient email is registered and if their wallet is deployed
+     * @param email The recipient's email address
+     * @return registered True if the email is registered in the system
+     * @return walletDeployed True if the wallet has been deployed for this email
+     */
+    function isRecipientRegistered(string calldata email) public view returns (bool registered, bool walletDeployed) {
+        registered = emailOwner[email] != address(0);
+        if (registered) {
+            bytes32 emailHash = keccak256(abi.encodePacked(email));
+            address walletAddr = getWalletAddress(emailHash);
+            walletDeployed = isWalletDeployed[walletAddr];
+        }
     }
     
     // ============ CRYPTO TRANSFERS ============
@@ -362,12 +374,50 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         emit CryptoSent(emailHash, nftContract, tokenId, msg.sender);
     }
     
+    function sendMailWithCrypto(
+        bytes32 cid,
+        string calldata recipientEmail,
+        bool isExternal,
+        address token,
+        uint256 amount,
+        bool isNft
+    ) external payable nonReentrant whenNotPaused rateLimited {
+        // 1. Index Mail
+        if (bytes(recipientEmail).length > MAX_EMAIL_LENGTH) revert EmailTooLong();
+        
+        uint256 mailId = mails.length;
+        mails.push(Mail({
+            cid: cid,
+            sender: msg.sender,
+            recipientEmail: recipientEmail,
+            timestamp: block.timestamp,
+            isExternal: isExternal,
+            hasCrypto: true
+        }));
+        
+        inbox[recipientEmail].push(mailId);
+        
+        emit MailSent(mailId, msg.sender, recipientEmail, cid);
+
+        // 2. Send Crypto
+        _sendCrypto(recipientEmail, token, amount, isNft);
+    }
+
     function sendCryptoToEmail(
         string calldata recipientEmail,
         address token,
         uint256 amount,
         bool isNft
     ) external payable nonReentrant whenNotPaused rateLimited {
+        _sendCrypto(recipientEmail, token, amount, isNft);
+    }
+
+    function _sendCrypto(
+        string calldata recipientEmail,
+        address token,
+        uint256 amount,
+        bool isNft
+    ) internal {
         if (amount < MIN_TRANSFER_AMOUNT) revert InvalidAmount();
         if (bytes(recipientEmail).length > MAX_EMAIL_LENGTH) revert EmailTooLong();
         
@@ -376,11 +426,15 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         
         address walletAddress = getWalletAddress(emailHash);
         
-        // Transfer assets
+        // Check if recipient is registered
+        (bool registered, bool walletDeployed) = isRecipientRegistered(recipientEmail);
+        
+        // Transfer assets based on registration status
         if (isNft) {
             if (token == address(0)) revert InvalidAddress();
             if (IERC721(token).ownerOf(amount) != msg.sender) revert NotNFTOwner();
             
+            // For NFTs, always transfer to deterministic wallet address
             try IERC721(token).safeTransferFrom(msg.sender, walletAddress, amount) {
                 if (IERC721(token).ownerOf(amount) != walletAddress) {
                     revert NFTTransferFailed();
@@ -389,11 +443,15 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
                 revert NFTTransferFailed();
             }
         } else if (token == address(0)) {
+            // Native ETH transfer
             if (msg.value != amount) revert InvalidAmount();
             (bool success, ) = walletAddress.call{value: amount}("");
             if (!success) revert TransferFailed();
         } else {
+            // ERC20 token transfer
             if (msg.value != 0) revert InvalidAmount();
+            
+            // Deduct tokens from sender's balance via transferFrom
             if (!IERC20(token).transferFrom(msg.sender, walletAddress, amount)) {
                 revert TransferFailed();
             }
@@ -407,7 +465,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
             sender: msg.sender,
             recipientEmail: recipientEmail,
             timestamp: block.timestamp,
-            claimed: false
+            claimed: registered && walletDeployed
         }));
         
         transferCount[emailHash]++;
@@ -434,19 +492,47 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     
     // ============ WALLET CLAIMING ============
     
+    function deployMyWallet(string calldata email) external nonReentrant whenNotPaused {
+        if (msg.sender != emailOwner[email]) revert Unauthorized();
+        
+        bytes32 emailHash = keccak256(abi.encodePacked(email));
+        address walletAddress = getWalletAddress(emailHash);
+        
+        if (isWalletDeployed[walletAddress]) revert WalletAlreadyClaimed();
+        
+        // Deploy the wallet using CREATE2
+        bytes memory bytecode = abi.encodePacked(
+            type(EmailWallet).creationCode,
+            abi.encode(address(this))
+        );
+        
+        address deployedWallet = Create2.deploy(0, emailHash, bytecode);
+        if (deployedWallet != walletAddress) revert TransferFailed();
+        
+        // Initialize the wallet
+        EmailWallet(payable(deployedWallet)).initialize(msg.sender);
+        
+        emailToWallet[emailHash] = walletAddress;
+        isWalletDeployed[walletAddress] = true;
+        
+        // Mark all transfers as claimed
+        CryptoTransfer[] storage transfers = pendingTransfers[emailHash];
+        for (uint256 i = 0; i < transfers.length; i++) {
+            transfers[i].claimed = true;
+        }
+        
+        emit WalletCreated(emailHash, walletAddress);
+        emit WalletClaimed(emailHash, walletAddress, msg.sender);
+    }
+
     function claimWallet(
         string calldata email,
-        address claimantOwner,
-        bytes calldata verificationProof
+        address claimantOwner
     ) external onlyRelayer nonReentrant whenNotPaused {
         if (claimantOwner == address(0)) revert InvalidAddress();
         if (bytes(email).length > MAX_EMAIL_LENGTH) revert EmailTooLong();
         
         bytes32 emailHash = keccak256(abi.encodePacked(email));
-        
-        if (!verifyEmailOwnership(email, claimantOwner, verificationProof)) {
-            revert InvalidVerification();
-        }
         
         // Check if wallet already deployed
         address walletAddress = getWalletAddress(emailHash);
@@ -484,43 +570,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         emit WalletClaimed(emailHash, walletAddress, claimantOwner);
     }
     
-    function verifyEmailOwnership(
-        string calldata email,
-        address claimant,
-        bytes calldata proof
-    ) internal view returns (bool) {
-        bytes32 messageHash = keccak256(abi.encodePacked(email, claimant));
-        address signer = recoverSigner(messageHash, proof);
-        
-        return signer == trustedRelayer;
-    }
-    
-    function recoverSigner(bytes32 messageHash, bytes memory signature)
-        internal
-        pure
-        returns (address)
-    {
-        bytes32 ethSignedMessageHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
-        );
-        
-        (bytes32 r, bytes32 s, uint8 v) = splitSignature(signature);
-        return ecrecover(ethSignedMessageHash, v, r, s);
-    }
-    
-    function splitSignature(bytes memory signature)
-        internal
-        pure
-        returns (bytes32 r, bytes32 s, uint8 v)
-    {
-        require(signature.length == 65, "Invalid signature length");
-        
-        assembly {
-            r := mload(add(signature, 32))
-            s := mload(add(signature, 64))
-            v := byte(0, mload(add(signature, 96)))
-        }
-    }
+
     
     // ============ ADMIN FUNCTIONS ============
     
@@ -530,13 +580,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         emit RelayerAuthorized(relayer, authorized);
     }
     
-    function setTrustedRelayer(address newRelayer) external onlyOwner {
-        if (newRelayer == address(0)) revert InvalidAddress();
-        address oldRelayer = trustedRelayer;
-        trustedRelayer = newRelayer;
-        authorizedRelayers[newRelayer] = true;
-        emit TrustedRelayerUpdated(oldRelayer, newRelayer);
-    }
+
     
     function setTransferCooldown(uint256 newCooldown) external onlyOwner {
         transferCooldown = newCooldown;

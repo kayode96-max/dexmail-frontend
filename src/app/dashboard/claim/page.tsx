@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -12,35 +13,84 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, Gift, KeyRound, Loader2, Wallet } from 'lucide-react';
+import { CheckCircle, Gift, KeyRound, Loader2, Wallet, AlertCircle } from 'lucide-react';
 import { claimService } from '@/lib/claim-service';
 import { useAccount, useConnect } from 'wagmi';
 import { injected } from 'wagmi/connectors';
 import { createWalletClient, http } from 'viem';
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
+import { useToast } from '@/hooks/use-toast';
+import { CryptoAsset } from '@/lib/types';
 
 type Step = 1 | 2 | 3 | 4;
 
 export default function ClaimPage() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<Step>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [claimToken, setClaimToken] = useState('');
   const [deployedAddress, setDeployedAddress] = useState('');
+  const [claimAssets, setClaimAssets] = useState<CryptoAsset[]>([]);
+  const [recipientEmail, setRecipientEmail] = useState('');
+  const { toast } = useToast();
+
+  // Auto-fill claim code from URL parameter
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl) {
+      setClaimToken(codeFromUrl);
+      console.log('[ClaimPage] Auto-filled claim code from URL:', codeFromUrl);
+    }
+  }, [searchParams]);
 
   const handleVerifyToken = async () => {
-    if (!claimToken) return;
+    if (!claimToken) {
+      toast({
+        title: "Missing Claim Code",
+        description: "Please enter a claim code to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate claim code format (6 digits)
+    if (!/^\d{6}$/.test(claimToken)) {
+      toast({
+        title: "Invalid Format",
+        description: "Claim code must be exactly 6 digits.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await claimService.verifyClaimToken(claimToken);
       if (response.valid) {
+        setClaimAssets(response.assets);
+        setRecipientEmail(response.email);
+
+        toast({
+          title: "Claim Code Verified!",
+          description: `Found ${response.assets.length} asset(s) to claim.`,
+        });
+
         setStep(2);
       } else {
-        alert('Invalid token');
+        toast({
+          title: "Invalid Claim Code",
+          description: "This claim code is not valid or has already been used.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error(error);
-      alert('Verification failed');
+      toast({
+        title: "Verification Failed",
+        description: error instanceof Error ? error.message : "Could not verify claim code.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +139,7 @@ export default function ClaimPage() {
             setToken={setClaimToken}
           />
         )}
-        {step === 2 && <Step2 onNext={handleVerifyCode} isLoading={isLoading} />}
+        {step === 2 && <Step2 onNext={handleVerifyCode} isLoading={isLoading} assets={claimAssets} recipientEmail={recipientEmail} />}
         {step === 3 && <Step3 onDeploy={handleDeploy} isLoading={isLoading} />}
         {step === 4 && <Step4 walletAddress={deployedAddress} />}
       </Card>
@@ -116,49 +166,94 @@ function Step1({
           Claim Your Crypto
         </CardTitle>
         <CardDescription>
-          Enter the claim token from your email to begin.
+          Enter the 6-digit claim code from your email to begin.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid gap-2">
-          <Label htmlFor="claim-token">Claim Token</Label>
+          <Label htmlFor="claim-token">Claim Code</Label>
           <Input
             id="claim-token"
-            placeholder="Enter your claim token"
+            placeholder="Enter 6-digit code (e.g., 123456)"
             value={token}
             onChange={(e) => setToken(e.target.value)}
+            maxLength={6}
+            pattern="\d{6}"
           />
+          <p className="text-xs text-muted-foreground">
+            The claim code should be a 6-digit number from your email.
+          </p>
         </div>
       </CardContent>
       <CardFooter>
-        <Button onClick={onNext} className="w-full" disabled={isLoading || !token}>
+        <Button onClick={onNext} className="w-full" disabled={isLoading || !token || token.length !== 6}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Verify Token
+          Verify Code
         </Button>
       </CardFooter>
     </>
   );
 }
 
-function Step2({ onNext, isLoading }: { onNext: () => void; isLoading: boolean }) {
+function Step2({
+  onNext,
+  isLoading,
+  assets,
+  recipientEmail
+}: {
+  onNext: () => void;
+  isLoading: boolean;
+  assets: CryptoAsset[];
+  recipientEmail: string;
+}) {
   return (
     <>
       <CardHeader>
-        <CardTitle>Verify Your Email</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <CheckCircle className="h-6 w-6 text-green-500" />
+          Claim Verified!
+        </CardTitle>
         <CardDescription>
-          We&apos;ve sent a verification code to your email address.
+          Review the assets you&apos;re about to claim for {recipientEmail}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-2">
-          <Label htmlFor="verification-code">Verification Code</Label>
-          <Input id="verification-code" placeholder="Enter 6-digit code" defaultValue="123456" />
+        <div className="grid gap-4">
+          <div className="rounded-lg border p-4 bg-muted/50">
+            <h4 className="font-semibold mb-3">Assets to Claim:</h4>
+            <div className="space-y-2">
+              {assets.map((asset, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-background rounded">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">
+                      {asset.type === 'eth' ? '💎' : asset.type === 'nft' ? '🖼️' : '🪙'}
+                    </span>
+                    <div>
+                      <p className="font-medium">
+                        {asset.type === 'eth' && `${asset.amount} ETH`}
+                        {asset.type === 'erc20' && `${asset.amount} ${asset.symbol || 'tokens'}`}
+                        {asset.type === 'nft' && `NFT #${asset.tokenId}`}
+                      </p>
+                      {asset.token && asset.type !== 'eth' && (
+                        <p className="text-xs text-muted-foreground font-mono">
+                          {asset.token.slice(0, 6)}...{asset.token.slice(-4)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Click continue to set up your wallet and claim these assets.
+          </p>
         </div>
       </CardContent>
       <CardFooter>
         <Button onClick={onNext} className="w-full" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Verify Code
+          Continue to Wallet Setup
         </Button>
       </CardFooter>
     </>

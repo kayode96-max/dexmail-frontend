@@ -55,7 +55,7 @@ export interface CryptoTransfer {
 
 export interface ClaimStatus {
   token: string;
-  status: 'pending' | 'claimed' | 'expired';
+  status: 'pending' | 'claimed' | 'expired' | 'invalid';
   email: string;
   walletAddress: string;
   assets: CryptoAsset[];
@@ -203,6 +203,7 @@ export interface ClaimVerificationResponse {
   email: string;
   assets: CryptoAsset[];
   walletAddress: string;
+  transactionHash?: string;
 }
 
 export interface ClaimDeploymentData {

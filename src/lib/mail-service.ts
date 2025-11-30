@@ -2,6 +2,9 @@ import { EmailMessage, CryptoAsset } from './types';
 import { readContract, writeContract, waitForTransactionReceipt } from '@wagmi/core';
 import { wagmiConfig } from './wagmi-config';
 import { BASEMAILER_ADDRESS, baseMailerAbi } from './contracts';
+import { parseUnits, parseEther, stringToHex } from 'viem';
+import { cryptoService } from './crypto-service';
+import { generateClaimCode, storeClaimCode, getClaimUrl, formatClaimCode } from './claim-code';
 
 export interface SendEmailData {
   from: string;
@@ -32,7 +35,76 @@ const EMAIL_STATUS_KEY = 'dexmail_email_status';
 
 
 class MailService {
-  async sendEmail(data: SendEmailData): Promise<SendEmailResponse> {
+  async sendEmail(data: SendEmailData): Promise<SendEmailResponse & { claimCode?: string; isDirectTransfer?: boolean }> {
+    // Check if recipient is registered (only for crypto transfers)
+    let isRecipientRegistered = false;
+    let isWalletDeployed = false;
+
+    if (data.cryptoTransfer?.enabled && data.cryptoTransfer.assets.length > 0 && data.to.length > 0) {
+      try {
+        const recipient = data.to[0];
+        const registrationStatus = await readContract(wagmiConfig, {
+          address: BASEMAILER_ADDRESS,
+          abi: baseMailerAbi,
+          functionName: 'isRecipientRegistered',
+          args: [recipient]
+        }) as [boolean, boolean];
+
+        isRecipientRegistered = registrationStatus[0];
+        isWalletDeployed = registrationStatus[1];
+
+        console.log('[MailService] Recipient registration status:', {
+          email: recipient,
+          registered: isRecipientRegistered,
+          walletDeployed: isWalletDeployed
+        });
+      } catch (error) {
+        console.warn('[MailService] Could not check recipient registration:', error);
+      }
+    }
+
+    // Generate claim code ONLY if crypto is being sent AND recipient is NOT registered
+    let claimCode: string | undefined;
+    const isDirectTransfer = isRecipientRegistered && isWalletDeployed;
+
+    if (data.cryptoTransfer?.enabled && data.cryptoTransfer.assets.length > 0 && !isRecipientRegistered) {
+      claimCode = generateClaimCode();
+      console.log('[MailService] Generated claim code for unregistered user:', claimCode);
+    }
+
+    // Prepare email body with appropriate content
+    let emailBody = data.body;
+    if (data.cryptoTransfer?.enabled && data.cryptoTransfer.assets.length > 0) {
+      const assetsText = data.cryptoTransfer.assets.map(asset => {
+        if (asset.type === 'eth') return `${asset.amount} ETH`;
+        if (asset.type === 'erc20') return `${asset.amount} ${asset.symbol || 'tokens'}`;
+        if (asset.type === 'nft') return `NFT #${asset.tokenId}`;
+        return 'Unknown asset';
+      }).join(', ');
+
+      emailBody += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+      emailBody += `🎁 CRYPTO ASSETS ATTACHED\n`;
+      emailBody += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+      emailBody += `You've received: ${assetsText}\n\n`;
+
+      if (isDirectTransfer) {
+        // Direct transfer message for registered users
+        emailBody += `✅ Assets have been transferred directly to your wallet!\n\n`;
+        emailBody += `You can view them in your DexMail dashboard.\n`;
+      } else if (claimCode) {
+        // Claim code instructions for unregistered users
+        const claimUrl = getClaimUrl(claimCode);
+
+        emailBody += `Your Claim Code: ${formatClaimCode(claimCode)}\n\n`;
+        emailBody += `To claim your assets:\n`;
+        emailBody += `1. Click this link: ${claimUrl}\n`;
+        emailBody += `2. Or manually enter the claim code: ${claimCode}\n\n`;
+        emailBody += `This code will auto-fill when you click the link above.\n`;
+      }
+
+      emailBody += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    }
+
     // 1. Upload to IPFS via API route
     const ipfsResponse = await fetch('/api/ipfs', {
       method: 'POST',
@@ -41,9 +113,11 @@ class MailService {
         from: data.from,
         to: data.to,
         subject: data.subject,
-        body: data.body,
+        body: emailBody, // Use modified body with claim code or direct transfer message
         timestamp: new Date().toISOString(),
-        cryptoTransfer: data.cryptoTransfer
+        cryptoTransfer: data.cryptoTransfer,
+        claimCode: claimCode, // Include claim code in IPFS metadata (only for unregistered users)
+        isDirectTransfer: isDirectTransfer
       })
     });
 
@@ -54,40 +128,123 @@ class MailService {
     const { cid } = await ipfsResponse.json();
     console.log('[MailService] Uploaded to IPFS with CID:', cid);
 
-    // 2. Call Smart Contract to index mail
+    // 1. Handle Crypto Assets & Mail Indexing
     let txHash = '';
+    const transferHashes: string[] = [];
 
-    if (data.to.length > 0) {
-      const recipient = data.to[0];
-      const hasCrypto = !!data.cryptoTransfer?.enabled;
+    if (!cid) {
+      throw new Error('Failed to get CID from IPFS upload');
+    }
 
-      // Convert IPFS CID to bytes32 by hashing it
-      // We'll store the hash and maintain a mapping of hash -> CID in localStorage
-      const { keccak256, toHex } = await import('viem');
-      const cidBytes32 = keccak256(toHex(cid));
+    // Convert CID to bytes32 using viem (safer for browser)
+    // stringToHex returns 0x-prefixed hex string
+    const cidHex = stringToHex(cid);
+    // Ensure it fits in bytes32 (64 hex chars + 2 for 0x)
+    const cidBytes32 = cidHex.slice(0, 66).padEnd(66, '0') as `0x${string}`;
 
-      // Store the mapping in localStorage for retrieval
-      if (typeof window !== 'undefined') {
+    console.log('[MailService] Generated CID hash:', cidBytes32);
+
+    // Store the mapping in localStorage for retrieval (Required for current mock implementation)
+    if (typeof window !== 'undefined') {
+      try {
         const cidMap = JSON.parse(localStorage.getItem('ipfs_cid_map') || '{}');
         cidMap[cidBytes32] = cid;
         localStorage.setItem('ipfs_cid_map', JSON.stringify(cidMap));
         console.log('[MailService] Stored CID mapping:', cidBytes32, '->', cid);
+      } catch (e) {
+        console.error('[MailService] Failed to store CID mapping:', e);
+      }
+    }
+
+    const recipient = data.to[0];
+
+    if (data.cryptoTransfer?.enabled && data.cryptoTransfer.assets.length > 0) {
+      const asset = data.cryptoTransfer.assets[0];
+
+      console.log(`Sending mail with crypto asset: ${asset.amount} ${asset.symbol}`);
+
+      let amount = BigInt(0);
+      let tokenAddress = asset.token || '0x0000000000000000000000000000000000000000';
+      const isNft = asset.type === 'nft';
+
+      if (asset.type === 'eth') {
+        amount = parseEther(asset.amount || '0');
+      } else if (asset.type === 'erc20') {
+        amount = parseUnits(asset.amount || '0', 18);
+      } else if (asset.type === 'nft') {
+        amount = BigInt(asset.tokenId || '0');
+        tokenAddress = asset.token!;
       }
 
+      // Ensure approval if needed
+      if (asset.type === 'erc20') {
+        await cryptoService.ensureApproval(tokenAddress, amount);
+      }
+
+      // Call sendMailWithCrypto (Atomic operation)
+      txHash = await writeContract(wagmiConfig, {
+        address: BASEMAILER_ADDRESS,
+        abi: baseMailerAbi,
+        functionName: 'sendMailWithCrypto',
+        args: [
+          cidBytes32,
+          recipient,
+          false, // isExternal
+          tokenAddress,
+          amount,
+          isNft
+        ],
+        value: asset.type === 'eth' ? amount : BigInt(0)
+      });
+
+      console.log('[MailService] Sent mail with crypto. Tx:', txHash);
+      transferHashes.push(txHash);
+
+      // Handle additional assets if any (separate transactions)
+      if (data.cryptoTransfer.assets.length > 1) {
+        for (let i = 1; i < data.cryptoTransfer.assets.length; i++) {
+          const extraAsset = data.cryptoTransfer.assets[i];
+          console.log(`Sending additional asset: ${extraAsset.symbol}`);
+          const result = await cryptoService.sendCrypto({
+            recipientEmail: recipient,
+            senderEmail: data.from,
+            assets: [extraAsset]
+          });
+          transferHashes.push(result.claimToken);
+        }
+      }
+
+    } else if (data.to.length > 0) {
+      // Regular mail indexing without crypto
       txHash = await writeContract(wagmiConfig, {
         address: BASEMAILER_ADDRESS,
         abi: baseMailerAbi,
         functionName: 'indexMail',
-        args: [cidBytes32, recipient, false, hasCrypto] // cid, recipientEmail, isExternal, hasCrypto
+        args: [cidBytes32, recipient, false, false]
       });
-
       console.log('[MailService] Indexed mail on blockchain with tx:', txHash);
+    }
+
+    // 3. Store claim code if generated (only for unregistered users)
+    if (claimCode && data.cryptoTransfer?.assets) {
+      const recipient = data.to[0]; // Recipient is already determined earlier
+      storeClaimCode(
+        claimCode,
+        txHash, // Use the mail indexing tx hash as the primary reference
+        recipient,
+        data.from,
+        data.cryptoTransfer.assets,
+        isRecipientRegistered,
+        isDirectTransfer
+      );
     }
 
     return {
       messageId: txHash,
       cid: cid,
-      key: 'mock-key'
+      key: 'mock-key',
+      claimCode,
+      isDirectTransfer
     };
   }
 
@@ -103,9 +260,13 @@ class MailService {
       let actualCid: string | null = null;
 
       if (typeof window !== 'undefined') {
-        const cidMap = JSON.parse(localStorage.getItem('ipfs_cid_map') || '{}');
-        actualCid = cidMap[cidHash];
-        console.log('[MailService] Retrieved CID from mapping:', cidHash, '->', actualCid);
+        try {
+          const cidMap = JSON.parse(localStorage.getItem('ipfs_cid_map') || '{}');
+          actualCid = cidMap[cidHash];
+          console.log('[MailService] Retrieved CID from mapping:', cidHash, '->', actualCid);
+        } catch (e) {
+          console.error('[MailService] Failed to parse CID map:', e);
+        }
       }
 
       if (!actualCid) {

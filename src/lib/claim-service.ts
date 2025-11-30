@@ -10,39 +10,66 @@ import { walletService } from './wallet-service';
 
 class ClaimService {
   async verifyClaimToken(token: string): Promise<ClaimVerificationResponse> {
-    // Mock verification
+    const { validateClaimCode } = await import('./claim-code');
+    const validation = validateClaimCode(token);
+
+    if (!validation.valid || !validation.data) {
+      return {
+        valid: false,
+        email: '',
+        assets: [],
+        walletAddress: ''
+      };
+    }
+
+    const claimData = validation.data;
+
     return {
       valid: true,
-      email: 'recipient@example.com', // Should be decoded from token or fetched
-      assets: [],
-      walletAddress: ''
+      email: claimData.recipientEmail,
+      assets: claimData.assets,
+      walletAddress: '', // Will be computed during deployment
+      transactionHash: claimData.txHash
     };
   }
 
   async getClaimStatus(token: string): Promise<ClaimStatus> {
+    const { getClaimData } = await import('./claim-code');
+    const claimData = getClaimData(token);
+
+    if (!claimData) {
+      return {
+        token,
+        status: 'invalid',
+        email: '',
+        walletAddress: '',
+        assets: [],
+        expiresAt: '',
+        isExpired: true
+      };
+    }
+
     return {
       token,
       status: 'pending',
-      email: '',
+      email: claimData.recipientEmail,
       walletAddress: '',
-      assets: [],
+      assets: claimData.assets,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       isExpired: false
     };
   }
 
   async deployAndClaim(data: ClaimDeploymentData): Promise<ClaimDeploymentResponse> {
-    // We assume the token contains the email info or we have it contextually
-    // But here we don't have the email in `data`.
-    // The original implementation likely decoded it from token on backend.
-    // We need to change the interface or assume we can get it.
-    // For now, I'll use a placeholder email or assume the caller knows it.
-    // But `deployWallet` needs email.
+    // Get claim data from the token (claim code)
+    const { getClaimData, deleteClaimCode } = await import('./claim-code');
+    const claimData = getClaimData(data.token);
 
-    // I'll assume the token IS the email hash or something we can use.
-    // Or we just fail if we can't get it.
+    if (!claimData) {
+      throw new Error('Invalid claim code');
+    }
 
-    const email = 'recipient@example.com'; // Placeholder
+    const email = claimData.recipientEmail;
 
     const result = await walletService.deployWallet({
       email,
@@ -50,10 +77,15 @@ class ClaimService {
       useGasSponsoring: data.useGasSponsoring
     });
 
+    // Delete claim code after successful claim
+    if (result.success) {
+      deleteClaimCode(data.token);
+    }
+
     return {
       success: result.success,
       walletAddress: result.walletAddress,
-      assets: [],
+      assets: claimData.assets,
       transactionHash: result.transactionHash,
       gasSponsored: result.gasSponsored
     };

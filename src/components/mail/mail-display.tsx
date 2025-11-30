@@ -181,17 +181,67 @@ export function MailDisplay({ mail, onBack }: MailDisplayProps) {
         </div>
 
         {mail.hasCryptoTransfer && (
-          <div className="mx-4 mb-4 p-4 bg-primary/10 rounded-lg border border-primary/20 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">💰</span>
-              <div>
-                <h4 className="font-semibold text-primary">Crypto Assets Attached</h4>
-                <p className="text-xs text-muted-foreground">This email contains crypto assets waiting to be claimed.</p>
-              </div>
-            </div>
-            <Button size="sm" onClick={() => window.location.href = '/dashboard/claim'}>
-              Claim Assets
-            </Button>
+          <div className="mx-4 mb-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
+            {(() => {
+              // Check if this is a direct transfer or claimable transfer
+              const isDirectTransfer = mail.body.includes('✅ Assets have been transferred directly');
+              const claimCodeMatch = mail.body.match(/Your Claim Code: (\d{3} \d{3})|claim code: (\d{6})/i);
+              const claimCode = claimCodeMatch ? (claimCodeMatch[1]?.replace(' ', '') || claimCodeMatch[2]) : '';
+
+              if (isDirectTransfer) {
+                // Direct transfer UI
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">✅</span>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-primary">Crypto Assets Received</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Assets have been transferred directly to your wallet. Check your dashboard to view them.
+                      </p>
+                    </div>
+                    <Button size="sm" onClick={() => window.location.href = '/dashboard'}>
+                      View Dashboard
+                    </Button>
+                  </div>
+                );
+              } else if (claimCode) {
+                // Claimable transfer UI
+                return (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">💰</span>
+                      <div>
+                        <h4 className="font-semibold text-primary">Crypto Assets Attached</h4>
+                        <p className="text-xs text-muted-foreground">
+                          This email contains crypto assets waiting to be claimed.
+                        </p>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => {
+                      window.location.href = `/dashboard/claim?code=${claimCode}`;
+                    }}>
+                      Claim Assets
+                    </Button>
+                  </div>
+                );
+              } else {
+                // Fallback for crypto transfers without clear indicators
+                return (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">💰</span>
+                      <div>
+                        <h4 className="font-semibold text-primary">Crypto Assets Attached</h4>
+                        <p className="text-xs text-muted-foreground">This email contains crypto assets.</p>
+                      </div>
+                    </div>
+                    <Button size="sm" onClick={() => window.location.href = '/dashboard/claim'}>
+                      View Details
+                    </Button>
+                  </div>
+                );
+              }
+            })()}
           </div>
         )}
 

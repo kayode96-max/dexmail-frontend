@@ -66,7 +66,7 @@ export function ComposeDialog({
         tokenId: a.tokenId
       }));
 
-      await mailService.sendEmail({
+      const result = await mailService.sendEmail({
         from: user.email, // Use authenticated user's email
         to: to.split(',').map(e => e.trim()),
         subject,
@@ -77,10 +77,33 @@ export function ComposeDialog({
         } : undefined
       });
 
-      toast({
-        title: "Email Sent!",
-        description: "Your message has been sent successfully.",
-      });
+      // Show different success messages based on transfer type
+      if (cryptoEnabled && result.isDirectTransfer) {
+        // Direct transfer to registered user
+        const assetsText = cryptoAssets.map(a => {
+          if (a.type === 'eth') return `${a.amount} ETH`;
+          if (a.type === 'erc20') return `${a.amount} ${a.symbol || 'tokens'}`;
+          if (a.type === 'nft') return `NFT #${a.tokenId}`;
+          return 'assets';
+        }).join(', ');
+
+        toast({
+          title: "Email & Crypto Sent!",
+          description: `${assetsText} transferred directly to ${to}. Transaction hash: ${result.messageId.slice(0, 10)}...`,
+        });
+      } else if (cryptoEnabled && result.claimCode) {
+        // Claim-based transfer for unregistered user
+        toast({
+          title: "Email Sent with Claim Code!",
+          description: `Your message has been sent. Claim code: ${result.claimCode}. The recipient can use this code to claim their assets.`,
+        });
+      } else {
+        // Regular email without crypto
+        toast({
+          title: "Email Sent!",
+          description: "Your message has been sent successfully.",
+        });
+      }
 
       setOpen(false);
       // Reset form

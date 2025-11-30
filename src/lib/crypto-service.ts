@@ -50,6 +50,37 @@ export interface DeployWalletResponse {
 }
 
 class CryptoService {
+  async ensureApproval(tokenAddress: string, amount: bigint): Promise<void> {
+    if (tokenAddress === '0x0000000000000000000000000000000000000000') return;
+
+    const { erc20Abi } = await import('viem');
+    const { getAccount, readContract, writeContract, waitForTransactionReceipt } = await import('@wagmi/core');
+    const account = getAccount(wagmiConfig);
+
+    if (account.address) {
+      // Check allowance
+      const allowance = await readContract(wagmiConfig, {
+        address: tokenAddress as `0x${string}`,
+        abi: erc20Abi,
+        functionName: 'allowance',
+        args: [account.address, BASEMAILER_ADDRESS]
+      }) as bigint;
+
+      if (allowance < amount) {
+        console.log(`Requesting approval for ${amount} tokens...`);
+        const approvalTx = await writeContract(wagmiConfig, {
+          address: tokenAddress as `0x${string}`,
+          abi: erc20Abi,
+          functionName: 'approve',
+          args: [BASEMAILER_ADDRESS, amount]
+        });
+
+        await waitForTransactionReceipt(wagmiConfig, { hash: approvalTx });
+        console.log('Approval confirmed');
+      }
+    }
+  }
+
   async sendCrypto(data: SendCryptoData): Promise<SendCryptoResponse> {
     // We only support sending one asset at a time in this refactor for simplicity
     // or we loop.
@@ -68,6 +99,11 @@ class CryptoService {
       amount = parseUnits(asset.amount || '0', 18); // Assuming 18 decimals
     } else if (asset.type === 'nft') {
       amount = BigInt(asset.tokenId || '0');
+    }
+
+    // Handle ERC20 Approval
+    if (asset.type === 'erc20') {
+      await this.ensureApproval(tokenAddress, amount);
     }
 
     const txHash = await writeContract(wagmiConfig, {
