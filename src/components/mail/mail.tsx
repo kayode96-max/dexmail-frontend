@@ -90,10 +90,14 @@ function Header() {
   );
 }
 
+import { useAuth } from '@/contexts/auth-context';
+
 function MobileHeader() {
+  const { user, logout } = useAuth();
   const userAvatar = PlaceHolderImages.find(
     (img) => img.id === 'user-avatar-1'
   );
+
   return (
     <header className="fixed top-0 z-10 flex h-16 items-center justify-between gap-3 border-b bg-background px-4 w-full">
       <div className="relative flex-1 max-w-xs">
@@ -110,16 +114,18 @@ function MobileHeader() {
                   alt="User Avatar"
                   data-ai-hint={userAvatar?.imageHint}
                 />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">Judha Maygustya</p>
-                <p className="text-xs leading-none text-muted-foreground">
-                  judha.design@gmail.com
+                <p className="text-sm font-medium leading-none truncate">{user?.email || 'User'}</p>
+                <p className="text-xs leading-none text-muted-foreground truncate">
+                  {user?.walletAddress
+                    ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
+                    : 'No wallet connected'}
                 </p>
               </div>
             </DropdownMenuLabel>
@@ -133,8 +139,8 @@ function MobileHeader() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/login">Log out</Link>
+            <DropdownMenuItem onClick={() => logout()}>
+              Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -142,6 +148,10 @@ function MobileHeader() {
     </header>
   );
 }
+
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
+
+// ... (imports remain the same)
 
 export function MailComponent({
   mails: initialMails,
@@ -153,17 +163,27 @@ export function MailComponent({
   const { mails, isLoading } = useMail();
   const [selectedMailId, setSelectedMailId] = React.useState<string | null>(null);
   const [selectedMailIds, setSelectedMailIds] = React.useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = React.useState(category);
   const isMobile = useIsMobile();
+
+  // Update activeCategory when prop changes, but only if not in mobile view (or handle differently if needed)
+  // For this specific request, we want mobile to control its own state via tabs
+  useEffect(() => {
+    if (!isMobile) {
+      setActiveCategory(category);
+    }
+  }, [category, isMobile]);
+
 
   // Use context mails if available, otherwise use initial mails
   const displayMails = mails.length > 0 ? mails : initialMails;
 
   const selectedMail = displayMails.find((item) => item.id === selectedMailId);
 
-  // Filter mails based on category
+  // Filter mails based on activeCategory
   const filteredMails = React.useMemo(() => {
     return displayMails.filter((mail) => {
-      switch (category) {
+      switch (activeCategory) {
         case 'all':
           return mail.status === 'inbox';
         case 'read':
@@ -184,7 +204,7 @@ export function MailComponent({
           return true;
       }
     });
-  }, [displayMails, category]);
+  }, [displayMails, activeCategory]);
 
   const handleSelectMail = (mail: Mail) => {
     setSelectedMailId(mail.id);
@@ -207,6 +227,16 @@ export function MailComponent({
       <div className="flex flex-col h-full w-full bg-background">
         <MobileHeader />
         <div className="mt-16 flex-1 flex flex-col">
+          {!selectedMailId && (
+            <div className="px-4 py-2">
+              <Tabs value={activeCategory === 'sent' ? 'sent' : 'all'} onValueChange={(val) => setActiveCategory(val as any)} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="all">Inbox</TabsTrigger>
+                  <TabsTrigger value="sent">Sent</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
           <div className="flex-1 w-full">
             {isLoading && !selectedMailId ? (
               <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
