@@ -219,13 +219,18 @@
 	{
 		"inputs": [
 			{
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "cid",
-				"type": "bytes32"
+				"type": "string"
 			},
 			{
 				"internalType": "string",
 				"name": "recipientEmail",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "originalSender",
 				"type": "string"
 			},
 			{
@@ -267,9 +272,15 @@
 			},
 			{
 				"indexed": false,
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "cid",
-				"type": "bytes32"
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "originalSender",
+				"type": "string"
 			}
 		],
 		"name": "MailSent",
@@ -402,9 +413,9 @@
 	{
 		"inputs": [
 			{
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "cid",
-				"type": "bytes32"
+				"type": "string"
 			},
 			{
 				"internalType": "string",
@@ -809,9 +820,9 @@
 			{
 				"components": [
 					{
-						"internalType": "bytes32",
+						"internalType": "string",
 						"name": "cid",
-						"type": "bytes32"
+						"type": "string"
 					},
 					{
 						"internalType": "address",
@@ -821,6 +832,11 @@
 					{
 						"internalType": "string",
 						"name": "recipientEmail",
+						"type": "string"
+					},
+					{
+						"internalType": "string",
+						"name": "originalSender",
 						"type": "string"
 					},
 					{
@@ -1113,9 +1129,9 @@
 		"name": "mails",
 		"outputs": [
 			{
-				"internalType": "bytes32",
+				"internalType": "string",
 				"name": "cid",
-				"type": "bytes32"
+				"type": "string"
 			},
 			{
 				"internalType": "address",
@@ -1125,6 +1141,11 @@
 			{
 				"internalType": "string",
 				"name": "recipientEmail",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "originalSender",
 				"type": "string"
 			},
 			{

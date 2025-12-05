@@ -108,9 +108,10 @@ contract EmailWallet is ReentrancyGuard {
  */
 contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     struct Mail {
-        bytes32 cid;
+        string cid;
         address sender;
         string recipientEmail;
+        string originalSender; // For bridged emails
         uint256 timestamp;
         bool isExternal;
         bool hasCrypto;
@@ -159,7 +160,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     uint256 public maxTransfersPerEmail = 1000;
     
     event EmailRegistered(string email, address indexed owner);
-    event MailSent(uint256 indexed mailId, address indexed sender, string recipient, bytes32 cid);
+    event MailSent(uint256 indexed mailId, address indexed sender, string recipient, string cid, string originalSender);
     event CryptoSent(bytes32 indexed emailHash, address indexed token, uint256 amount, address indexed sender);
     event WalletCreated(bytes32 indexed emailHash, address walletAddress);
     event WalletClaimed(bytes32 indexed emailHash, address walletAddress, address indexed claimant);
@@ -228,8 +229,9 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     // ============ MAIL INDEXING ============
     
     function indexMail(
-        bytes32 cid,
+        string calldata cid,
         string calldata recipientEmail,
+        string calldata originalSender,
         bool isExternal,
         bool hasCrypto
     ) external whenNotPaused {
@@ -241,6 +243,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
             cid: cid,
             sender: msg.sender,
             recipientEmail: recipientEmail,
+            originalSender: originalSender,
             timestamp: block.timestamp,
             isExternal: isExternal,
             hasCrypto: hasCrypto
@@ -248,7 +251,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         
         inbox[recipientEmail].push(mailId);
         
-        emit MailSent(mailId, msg.sender, recipientEmail, cid);
+        emit MailSent(mailId, msg.sender, recipientEmail, cid, originalSender);
     }
     
     function getInbox(string calldata email) external view returns (uint256[] memory) {
@@ -388,7 +391,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     }
     
     function sendMailWithCrypto(
-        bytes32 cid,
+        string calldata cid,
         string calldata recipientEmail,
         bool isExternal,
         address token,
@@ -403,6 +406,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
             cid: cid,
             sender: msg.sender,
             recipientEmail: recipientEmail,
+            originalSender: "", // Internal mail, no original sender override
             timestamp: block.timestamp,
             isExternal: isExternal,
             hasCrypto: true
@@ -410,7 +414,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         
         inbox[recipientEmail].push(mailId);
         
-        emit MailSent(mailId, msg.sender, recipientEmail, cid);
+        emit MailSent(mailId, msg.sender, recipientEmail, cid, "");
 
         // 2. Send Crypto
         _sendCrypto(recipientEmail, token, amount, isNft);

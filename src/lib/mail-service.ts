@@ -178,6 +178,7 @@ class MailService {
 
 
     const recipient = data.to[0];
+    const isExternal = recipient.includes('@') && !recipient.endsWith('@dexmail.app');
 
     if (data.cryptoTransfer?.enabled && data.cryptoTransfer.assets.length > 0) {
       const asset = data.cryptoTransfer.assets[0];
@@ -208,9 +209,9 @@ class MailService {
         abi: baseMailerAbi,
         functionName: 'sendMailWithCrypto',
         args: [
-          cidBytes32,
+          cid, // Use string CID
           recipient,
-          false, // isExternal
+          isExternal, // Use calculated flag
           tokenAddress,
           amount,
           isNft
@@ -241,7 +242,7 @@ class MailService {
         address: BASEMAILER_ADDRESS,
         abi: baseMailerAbi,
         functionName: 'indexMail',
-        args: [cidBytes32, recipient, false, false]
+        args: [cid, recipient, "", isExternal, false] // Added originalSender="" and used string CID
       });
       console.log('[MailService] Indexed mail on blockchain with tx:', txHash);
     }
@@ -260,6 +261,47 @@ class MailService {
       );
     }
 
+    // 4. Send via SendGrid (SMTP Relay) if recipient is an external email
+    // We do this for all emails that look like valid email addresses, 
+    // regardless of whether they are registered on DexMail or not, 
+    // to ensure they get a notification/copy.
+    // Or strictly for unregistered users? 
+    // The user request said "implement sendgrid for mail sending".
+    // Let's send if it looks like an email address.
+    // const recipient = data.to[0]; // Already declared above
+    if (isExternal) {
+      try {
+        console.log('--------------------------------------------------');
+        console.log('[Bridge] 🌉 EXTERNAL MAIL DETECTED');
+        console.log('[Bridge] 📤 Relaying via SendGrid Bridge...');
+        console.log('[Bridge] 📧 Recipient:', recipient);
+        console.log('[Bridge] 📨 Sender (Reply-To):', data.from);
+
+        const sendGridResponse = await fetch('/api/sendgrid/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: recipient,
+            from: 'noreply@dexmail.app', // Verified sender
+            replyTo: data.from, // User's address/email so replies go to them
+            subject: data.subject,
+            text: emailBody, // Use the body that includes claim instructions
+            html: emailBody.replace(/\n/g, '<br/>') // Simple text-to-html conversion
+          })
+        });
+
+        if (sendGridResponse.ok) {
+          console.log('[Bridge] ✅ Successfully relayed via SendGrid');
+          console.log('--------------------------------------------------');
+        } else {
+          console.warn('[Bridge] ❌ Failed to relay via SendGrid:', await sendGridResponse.text());
+          console.log('--------------------------------------------------');
+        }
+      } catch (sgError) {
+        console.error('[MailService] Error sending via SendGrid:', sgError);
+      }
+    }
+
     return {
       messageId: txHash,
       cid: cid,
@@ -269,7 +311,7 @@ class MailService {
     };
   }
 
-  private async fetchEmailFromIPFS(cidHash: string): Promise<{ subject: string; body: string } | null> {
+  private async fetchEmailFromIPFS(cidHash: string): Promise<{ subject: string; body: string; from?: string } | null> {
     try {
       console.log('[MailService] fetchEmailFromIPFS called with CID hash:', cidHash);
 
@@ -281,33 +323,43 @@ class MailService {
 
       let actualCid: string | undefined;
 
-      // Try to get CID from MongoDB first
-      try {
-        const retrieveResponse = await fetch(`/api/cid/retrieve?cidHash=${encodeURIComponent(cidHash)}`);
+      // Check if the input is already a full CID (starts with Qm or bafy)
+      // The contract now stores the full CID string, so we might receive it directly.
+      if (!cidHash.startsWith('0x')) {
+        actualCid = cidHash;
+        console.log('[MailService] Input is already a full CID, skipping lookup:', actualCid);
+      } else {
+        // It's a hash (0x...), proceed with lookup
+        // Try to get CID from MongoDB first
 
-        if (retrieveResponse.ok) {
-          const data = await retrieveResponse.json();
-          actualCid = data.fullCid;
-          console.log('[MailService] ✅ Retrieved CID from MongoDB:', { cidHash, actualCid });
-        } else if (retrieveResponse.status === 404) {
-          console.log('[MailService] CID not found in MongoDB, trying localStorage fallback');
-        } else {
-          console.warn('[MailService] MongoDB API error, trying localStorage fallback');
-        }
-      } catch (apiError) {
-        console.error('[MailService] Error calling CID retrieve API:', apiError);
-      }
-
-      // Fallback: Try localStorage
-      if (!actualCid && typeof window !== 'undefined') {
+        // Try to get CID from MongoDB first
         try {
-          const cidMap = JSON.parse(localStorage.getItem('ipfs_cid_map') || '{}');
-          actualCid = cidMap[cidHash];
-          if (actualCid) {
-            console.log('[MailService] Retrieved CID from localStorage (fallback):', { cidHash, actualCid });
+          const retrieveResponse = await fetch(`/api/cid/retrieve?cidHash=${encodeURIComponent(cidHash)}`);
+
+          if (retrieveResponse.ok) {
+            const data = await retrieveResponse.json();
+            actualCid = data.fullCid;
+            console.log('[MailService] ✅ Retrieved CID from MongoDB:', { cidHash, actualCid });
+          } else if (retrieveResponse.status === 404) {
+            console.log('[MailService] CID not found in MongoDB, trying localStorage fallback');
+          } else {
+            console.warn('[MailService] MongoDB API error, trying localStorage fallback');
           }
-        } catch (e) {
-          console.error('[MailService] Failed to parse localStorage CID map:', e);
+        } catch (apiError) {
+          console.error('[MailService] Error calling CID retrieve API:', apiError);
+        }
+
+        // Fallback: Try localStorage
+        if (!actualCid && typeof window !== 'undefined') {
+          try {
+            const cidMap = JSON.parse(localStorage.getItem('ipfs_cid_map') || '{}');
+            actualCid = cidMap[cidHash];
+            if (actualCid) {
+              console.log('[MailService] Retrieved CID from localStorage (fallback):', { cidHash, actualCid });
+            }
+          } catch (e) {
+            console.error('[MailService] Failed to parse localStorage CID map:', e);
+          }
         }
       }
 
@@ -333,7 +385,8 @@ class MailService {
 
       return {
         subject: data.subject || 'No Subject',
-        body: data.body || ''
+        body: data.body || '',
+        from: data.from
       };
     } catch (error) {
       console.error('[MailService] Error fetching from IPFS:', error);
@@ -410,9 +463,13 @@ class MailService {
           const subject = ipfsContent?.subject || 'Email from blockchain';
           const body = ipfsContent?.body || 'This email was sent via DexMail';
 
+          // If mail is external (bridged), use the originalSender from contract
+          // Otherwise use the resolved sender from contract
+          const finalSender = (mail.isExternal && mail.originalSender) ? mail.originalSender : senderEmail;
+
           messages.push({
             messageId: id.toString(),
-            from: senderEmail,
+            from: finalSender,
             to: [mail.recipientEmail],
             subject: subject,
             body: body,

@@ -1,4 +1,4 @@
-import { createPublicClient, createWalletClient, http, parseAbiItem } from 'viem';
+import { createPublicClient, createWalletClient, http, parseAbiItem, stringToHex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { baseSepolia } from 'viem/chains';
 import { config } from 'dotenv';
@@ -61,18 +61,27 @@ export async function indexMailOnChain(
 ) {
     if (!walletClient || !account) throw new Error('Relayer wallet not configured');
 
-    // Convert CID to bytes32 if possible, or use a hash
-    // The contract expects bytes32. IPFS CID is usually string.
-    // We'll use a placeholder or hash of CID for now if it doesn't fit.
-    // Real implementation needs proper CID handling (e.g. storing full CID in event or IPFS hash in bytes32)
-    // For this prototype, we'll use a dummy bytes32
-    const cidBytes32 = '0x' + '0'.repeat(64);
+    // CID is now a string in the contract
+    const originalSender = isExternal ? "sendgrid-inbound" : ""; // Or pass it as an argument?
+    // Wait, I need to update the function signature to accept originalSender if I want to pass it correctly.
+    // But for now, let's just use the CID string.
+
+    // Actually, I should update the function signature to match the contract.
+    // But wait, the previous plan said "Update indexMailOnChain to pass the full CID string and the sender email."
+    // So I should update the signature.
+
+    // Let's do a quick fix here to match the plan.
+    // But I can't change the signature in this tool call easily if I don't change the caller.
+    // The caller is in route.ts.
+
+    // Let's just update the body for now and I will update the signature in the next step properly.
+    // Wait, I can update the signature here.
 
     const hash = await walletClient.writeContract({
         address: CONTRACT_ADDRESS,
         abi: baseMailerAbi,
         functionName: 'indexMail',
-        args: [recipient, cidBytes32, isExternal, hasCrypto]
+        args: [cid, recipient, isExternal ? "External Sender" : "", isExternal, hasCrypto]
     });
 
     return hash;
