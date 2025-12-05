@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadJSONToIPFS } from '@/lib/pinata';
 import { indexMailOnChain } from '@/server/utils';
+import fs from 'fs';
+import path from 'path';
 
 // SendGrid Inbound Parse Webhook handler
 export async function POST(req: NextRequest) {
+    const logFile = path.join(process.cwd(), 'inbound-logs.txt');
+    const log = (msg: string) => {
+        try {
+            fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
+        } catch (e) {
+            console.error('Failed to write to log file:', e);
+        }
+    };
+
     try {
+        log('Inbound webhook triggered');
         // Parse multipart/form-data
         const formData = await req.formData();
+        log('FormData received');
 
         // Extract fields
         const to = formData.get('to') as string;
@@ -19,7 +32,9 @@ export async function POST(req: NextRequest) {
         const spf = formData.get('SPF') as string;
         const envelope = formData.get('envelope') as string;
         const charsets = formData.get('charsets') as string;
+        const email = formData.get('email') as string; // Raw email content if available
 
+        log(`Received email from: ${from} to: ${to} subject: ${subject}`);
         console.log(`[SendGrid Inbound] Received email from ${from} to ${to}`);
 
         // 1. Upload to IPFS
@@ -43,6 +58,7 @@ export async function POST(req: NextRequest) {
 
         const ipfsResult = await uploadJSONToIPFS(emailData);
         console.log('[SendGrid Inbound] Uploaded to IPFS:', ipfsResult.IpfsHash);
+        log(`Uploaded to IPFS: ${ipfsResult.IpfsHash}`);
 
         // 2. Index on Chain
         // We need to parse the 'to' field to handle multiple recipients if necessary
@@ -72,6 +88,7 @@ export async function POST(req: NextRequest) {
         }
 
         console.log(`[SendGrid Inbound] Indexing for recipient: ${recipient}`);
+        log(`Indexing for recipient: ${recipient}`);
 
         // Call the server-side utility to index on chain
         // Note: indexMailOnChain uses a relayer wallet defined in env vars
@@ -83,10 +100,12 @@ export async function POST(req: NextRequest) {
         );
 
         console.log(`[SendGrid Inbound] Indexed on chain. Tx: ${txHash}`);
+        log(`Indexed on chain. Tx: ${txHash}`);
 
         return NextResponse.json({ success: true, cid: ipfsResult.IpfsHash, txHash });
     } catch (error: any) {
         console.error('[SendGrid Inbound] Error processing email:', error);
+        log(`Error: ${error.message}`);
         return NextResponse.json(
             { error: 'Failed to process inbound email', details: error.message },
             { status: 500 }
