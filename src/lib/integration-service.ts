@@ -125,7 +125,7 @@ class IntegrationService {
 
     for (const nft of data.nfts) {
       try {
-        const nftResponse = await nftService.sendNFT(
+        const nftResponse = await (nftService as any).sendNFT(
           { ...nft, useGasSponsoring: true },
           senderKey
         );

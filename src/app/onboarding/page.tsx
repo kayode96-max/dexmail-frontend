@@ -20,17 +20,17 @@ const onboardingSteps = [
   {
     title: "Secure Email for Everyone",
     subtitle: "Experience the power of decentralized email with built-in security and privacy. Your communication, protected by blockchain technology.",
-    illustration: "/illustrations/team-collaboration.svg"
+    illustration: "/illustrations/team-collaboration.png"
   },
   {
-    title: "User-Friendly at its Core", 
+    title: "User-Friendly at its Core",
     subtitle: "Discover the essence of user-friendliness as our interface empowers you with intuitive controls and seamless email management.",
-    illustration: "/illustrations/user-interface.svg"
+    illustration: "/illustrations/user-interface.png"
   },
   {
     title: "Easy Crypto Integration",
     subtitle: "Send cryptocurrencies directly through email with ease. Simplify your digital transactions and manage everything in one place.",
-    illustration: "/illustrations/task-creation.svg"
+    illustration: "/illustrations/task-creation.png"
   }
 ];
 
@@ -59,9 +59,9 @@ export default function OnboardingPage() {
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-6 pb-6">
-        <div className="w-full max-w-sm mx-auto">
+        <div className="w-full max-w-lg mx-auto">
           {step <= 3 && (
-            <OnboardingStep 
+            <OnboardingStep
               step={onboardingSteps[step - 1]}
               isLast={step === 3}
               onNext={handleNext}
@@ -77,13 +77,12 @@ export default function OnboardingPage() {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className={`h-2 w-8 rounded-full transition-all duration-300 ${
-                i === step
-                  ? 'bg-slate-800'
-                  : i < step
+              className={`h-2 w-8 rounded-full transition-all duration-300 ${i === step
+                ? 'bg-slate-800'
+                : i < step
                   ? 'bg-slate-400'
                   : 'bg-slate-200'
-              }`}
+                }`}
             />
           ))}
         </div>
@@ -101,15 +100,15 @@ interface OnboardingStepProps {
 
 function OnboardingStep({ step, isLast, onNext, onSkip }: OnboardingStepProps) {
   return (
-    <div className="text-center space-y-8">
+    <div className="text-center space-y-2">
       {/* Illustration */}
-      <div className="relative h-80 w-full">
+      <div className="relative h-[450px] w-full -mb-12">
         <Image
           src={step.illustration}
           alt={step.title}
           width={320}
           height={320}
-          className="w-full h-full object-contain"
+          className="w-full h-full object-contain mix-blend-multiply"
           priority
         />
       </div>
@@ -128,15 +127,15 @@ function OnboardingStep({ step, isLast, onNext, onSkip }: OnboardingStepProps) {
       <div className="space-y-4">
         {isLast ? (
           <>
-            <Button 
-              asChild 
+            <Button
+              asChild
               className="w-full h-12 bg-brand-blue hover:bg-brand-blue-hover text-white font-semibold rounded-full"
             >
               <Link href="/login">Sign in</Link>
             </Button>
-            <Button 
-              asChild 
-              variant="ghost" 
+            <Button
+              asChild
+              variant="ghost"
               className="w-full h-12 text-slate-900 font-semibold rounded-full border-2 border-slate-200 hover:bg-slate-50"
             >
               <Link href="/register">Sign up</Link>
@@ -144,15 +143,15 @@ function OnboardingStep({ step, isLast, onNext, onSkip }: OnboardingStepProps) {
           </>
         ) : (
           <>
-            <Button 
+            <Button
               onClick={onNext}
               className="w-full h-12 bg-brand-blue hover:bg-brand-blue-hover text-white font-semibold rounded-full"
             >
               Next
             </Button>
-            <Button 
-              onClick={onSkip} 
-              variant="ghost" 
+            <Button
+              onClick={onSkip}
+              variant="ghost"
               className="w-full h-12 text-slate-600 font-medium"
             >
               Skip
