@@ -315,7 +315,41 @@ export function MailComponent({
             {isLoading && !selectedMailId ? (
               <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
             ) : selectedMail ? (
-              <MailDisplay mail={selectedMail} onBack={handleBack} />
+              selectedMail.status === 'draft' ? (
+                <ComposeDialog
+                  key={selectedMail.id}
+                  initialData={{
+                    to: selectedMail.email,
+                    subject: selectedMail.subject,
+                    body: selectedMail.body,
+                    id: selectedMail.id
+                  }}
+                >
+                  <div className="flex h-full flex-col items-center justify-center p-8 text-center gap-4">
+                    <div>
+                      <h2 className="text-2xl font-bold mb-2">Draft Message</h2>
+                      <p className="text-muted-foreground">You are viewing a draft.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="lg">
+                        <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Button>
+                      <Button size="lg" variant="destructive" onClick={(e) => {
+                        e.stopPropagation();
+                        deleteMails([selectedMail.id]);
+                        setSelectedMailId(null);
+                      }}>
+                        <Trash className="mr-2 h-4 w-4" /> Discard
+                      </Button>
+                    </div>
+                    <Button variant="ghost" onClick={handleBack} className="mt-4">
+                      Back to List
+                    </Button>
+                  </div>
+                </ComposeDialog>
+              ) : (
+                <MailDisplay mail={selectedMail} onBack={handleBack} />
+              )
             ) : (
               <MailList
                 items={filteredMails}
@@ -388,12 +422,23 @@ export function MailComponent({
                    I added logic in ComposeDialog to set state from initialData, but not to auto-open.
                    Let's just show a "Continue Editing" button in the view pane for simplicity and robustness.
                */}
-              <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-                <h2 className="text-2xl font-bold mb-4">Draft Message</h2>
-                <p className="text-muted-foreground mb-6">You are viewing a draft.</p>
-                <Button size="lg">
-                  <Edit className="mr-2 h-4 w-4" /> Continue Editing
-                </Button>
+              <div className="flex h-full flex-col items-center justify-center p-8 text-center gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Draft Message</h2>
+                  <p className="text-muted-foreground">You are viewing a draft.</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="lg">
+                    <Edit className="mr-2 h-4 w-4" /> Continue Editing
+                  </Button>
+                  <Button size="lg" variant="destructive" onClick={(e) => {
+                    e.stopPropagation();
+                    deleteMails([selectedMail.id]);
+                    setSelectedMailId(null);
+                  }}>
+                    <Trash className="mr-2 h-4 w-4" /> Discard
+                  </Button>
+                </div>
               </div>
             </ComposeDialog>
           ) : (

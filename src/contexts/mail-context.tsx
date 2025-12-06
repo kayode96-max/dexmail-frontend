@@ -176,7 +176,12 @@ export function MailProvider({ children }: { children: ReactNode }) {
     };
 
     const moveToTrash = (messageId: string) => {
-        mailService.moveToTrash(messageId);
+        const mail = mails.find(m => m.id === messageId);
+        if (mail?.status === 'draft') {
+            mailService.deleteDraft(messageId);
+        } else {
+            mailService.moveToTrash(messageId);
+        }
         setStatusVersion(v => v + 1);
     };
 
@@ -196,7 +201,14 @@ export function MailProvider({ children }: { children: ReactNode }) {
     };
 
     const deleteMails = (messageIds: string[]) => {
-        messageIds.forEach(id => mailService.moveToTrash(id));
+        messageIds.forEach(id => {
+            const mail = mails.find(m => m.id === id);
+            if (mail?.status === 'draft') {
+                mailService.deleteDraft(id);
+            } else {
+                mailService.moveToTrash(id);
+            }
+        });
         setStatusVersion(v => v + 1);
     };
 
