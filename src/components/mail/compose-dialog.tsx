@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,6 +131,9 @@ export function ComposeDialog({
       <DialogContent className="sm:max-w-[625px]">
         <DialogHeader>
           <DialogTitle>New Message</DialogTitle>
+          <DialogDescription>
+            Compose a new email to send to another user. You can also attach crypto assets.
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">

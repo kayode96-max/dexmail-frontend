@@ -25,13 +25,7 @@ export const nftService = {
 
       if (!data.nfts) return [];
 
-      return data.nfts.map((nft: any) => ({
-        id: `${nft.contract}-${nft.identifier}`,
-        name: nft.name || `#${nft.identifier}`,
-        collection: nft.collection || 'Unknown Collection',
-        imageUrl: nft.image_url || nft.display_image_url || 'https://via.placeholder.com/300?text=No+Image',
-        imageHint: nft.description || 'NFT Image'
-      }));
+      return data.nfts;
 
     } catch (error) {
       console.error('[NftService] Error fetching NFTs:', error);

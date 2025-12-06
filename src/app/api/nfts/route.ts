@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getPlaceholderImage } from '@/lib/placeholder';
 
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
             id: `${nft.contract.address}-${nft.tokenId}`,
             name: nft.name || `#${nft.tokenId}`,
             collection: nft.contract.name || 'Unknown Collection',
-            imageUrl: nft.image.originalUrl || nft.image.thumbnailUrl || nft.image.pngUrl || 'https://via.placeholder.com/300?text=No+Image',
+            imageUrl: nft.image.originalUrl || nft.image.thumbnailUrl || nft.image.pngUrl || getPlaceholderImage(),
             imageHint: nft.description || 'NFT Image'
         }));
 

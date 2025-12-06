@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,7 +11,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { nftService } from '@/lib/nft-service';
+import { X, Loader2 } from 'lucide-react';
+import { useAccount } from 'wagmi';
+import { useQuery } from '@tanstack/react-query';
+import { tokenService } from '@/lib/token-service';
 
 export type Asset = {
   type: 'erc20' | 'nft' | 'eth';
@@ -27,35 +31,70 @@ type CryptoAttachmentProps = {
 };
 
 export function CryptoAttachment({ assets, onChange }: CryptoAttachmentProps) {
+  const { address } = useAccount();
   const [assetType, setAssetType] = useState('erc20');
-  const [token, setToken] = useState('USDC');
+  const [selectedTokenId, setSelectedTokenId] = useState('');
+  const [selectedNftId, setSelectedNftId] = useState('');
   const [amount, setAmount] = useState('');
-  const [nftContract, setNftContract] = useState('');
-  const [nftTokenId, setNftTokenId] = useState('');
+
+  // Fetch Tokens
+  const { data: tokens = [], isLoading: isLoadingTokens } = useQuery({
+    queryKey: ['tokens', address],
+    queryFn: async () => {
+      if (!address) return [];
+      return await tokenService.getTokens(address);
+    },
+    enabled: !!address,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Fetch NFTs
+  const { data: nfts = [], isLoading: isLoadingNfts } = useQuery({
+    queryKey: ['nfts', address],
+    queryFn: async () => {
+      if (!address) return [];
+      return await nftService.getNfts(address);
+    },
+    enabled: !!address,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   const addAsset = () => {
-    if (assetType === 'erc20' && amount) {
-      onChange([...assets, { type: 'erc20', symbol: token, amount }]);
-      setAmount('');
+    if (assetType === 'erc20' && amount && selectedTokenId) {
+      const token = tokens.find(t => t.id === selectedTokenId);
+      if (token) {
+        onChange([...assets, {
+          type: 'erc20',
+          symbol: token.symbol,
+          amount,
+          contract: token.contractAddress
+        }]);
+        setAmount('');
+        setSelectedTokenId('');
+      }
     } else if (assetType === 'eth' && amount) {
       onChange([...assets, { type: 'eth', symbol: 'ETH', amount }]);
       setAmount('');
-    } else if (assetType === 'nft' && nftContract && nftTokenId) {
-      onChange([
-        ...assets,
-        {
-          type: 'nft',
-          symbol: 'NFT',
-          amount: '1',
-          contract: nftContract,
-          tokenId: nftTokenId,
-        },
-      ]);
-      setNftContract('');
-      setNftTokenId('');
+    } else if (assetType === 'nft' && selectedNftId) {
+      const nft = nfts.find(n => n.id === selectedNftId);
+      if (nft) {
+        // Parse contract and tokenId from ID (format: contract-tokenId)
+        const [contract, tokenId] = nft.id.split('-');
+        onChange([
+          ...assets,
+          {
+            type: 'nft',
+            symbol: 'NFT',
+            amount: '1',
+            contract: contract,
+            tokenId: tokenId,
+          },
+        ]);
+        setSelectedNftId('');
+      }
     }
   };
-  
+
   const removeAsset = (index: number) => {
     onChange(assets.filter((_, i) => i !== index));
   };
@@ -76,14 +115,26 @@ export function CryptoAttachment({ assets, onChange }: CryptoAttachmentProps) {
 
         {assetType === 'erc20' && (
           <>
-            <Select value={token} onValueChange={setToken}>
+            <Select value={selectedTokenId} onValueChange={setSelectedTokenId}>
               <SelectTrigger>
-                <SelectValue placeholder="Token" />
+                <SelectValue placeholder={isLoadingTokens ? "Loading tokens..." : "Select Token"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="USDC">USDC</SelectItem>
-                <SelectItem value="USDT">USDT</SelectItem>
-                <SelectItem value="DAI">DAI</SelectItem>
+                {isLoadingTokens ? (
+                  <div className="flex items-center justify-center p-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                ) : tokens.length > 0 ? (
+                  tokens.map(token => (
+                    <SelectItem key={token.id} value={token.id}>
+                      {token.symbol} ({parseFloat(token.balance).toFixed(4)})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-muted-foreground text-center">
+                    No tokens found
+                  </div>
+                )}
               </SelectContent>
             </Select>
             <Input
@@ -106,22 +157,38 @@ export function CryptoAttachment({ assets, onChange }: CryptoAttachmentProps) {
         )}
 
         {assetType === 'nft' && (
-          <>
-            <Input
-              placeholder="NFT Contract Address"
-              value={nftContract}
-              onChange={(e) => setNftContract(e.target.value)}
-            />
-            <Input
-              placeholder="Token ID"
-              value={nftTokenId}
-              onChange={(e) => setNftTokenId(e.target.value)}
-            />
-          </>
+          <div className="md:col-span-2">
+            <Select value={selectedNftId} onValueChange={setSelectedNftId}>
+              <SelectTrigger>
+                <SelectValue placeholder={isLoadingNfts ? "Loading NFTs..." : "Select NFT"} />
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingNfts ? (
+                  <div className="flex items-center justify-center p-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                ) : nfts.length > 0 ? (
+                  nfts.map(nft => (
+                    <SelectItem key={nft.id} value={nft.id}>
+                      {nft.name} ({nft.collection})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-muted-foreground text-center">
+                    No NFTs found
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </div>
 
-      <Button onClick={addAsset} size="sm">
+      <Button onClick={addAsset} size="sm" disabled={
+        (assetType === 'erc20' && (!amount || !selectedTokenId)) ||
+        (assetType === 'eth' && !amount) ||
+        (assetType === 'nft' && !selectedNftId)
+      }>
         Add Asset
       </Button>
 
@@ -131,7 +198,7 @@ export function CryptoAttachment({ assets, onChange }: CryptoAttachmentProps) {
           <div className="flex flex-wrap gap-2">
             {assets.map((asset, i) => (
               <Badge key={i} variant="secondary" className="flex items-center gap-1.5 pr-1">
-                {asset.type === 'nft' ? `NFT: ${asset.contract?.substring(0,6)}...` : `${asset.amount} ${asset.symbol}`}
+                {asset.type === 'nft' ? `NFT: ${asset.contract?.substring(0, 6)}...` : `${asset.amount} ${asset.symbol}`}
                 <button
                   onClick={() => removeAsset(i)}
                   className="rounded-full hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
