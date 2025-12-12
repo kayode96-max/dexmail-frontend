@@ -13,6 +13,7 @@ import { Wallet, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { useBasename } from "@/hooks/use-basename";
 import { useAuth } from "@/contexts/auth-context";
+import { authService } from "@/lib/auth-service";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -22,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useEvmAddress, useIsSignedIn, useSignInWithEmail, useVerifyEmailOTP, useSignOut } from "@coinbase/cdp-hooks";
+import { useEvmAddress, useIsSignedIn, useSignInWithEmail, useVerifyEmailOTP, useSignOut, useSendEvmTransaction } from "@coinbase/cdp-hooks";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function RegisterPage() {
   const { isSignedIn } = useIsSignedIn();
   const { evmAddress } = useEvmAddress();
   const { signOut } = useSignOut();
+  const { sendEvmTransaction } = useSendEvmTransaction();
   const {
     address,
     isConnected,
@@ -49,7 +51,7 @@ export default function RegisterPage() {
     generateEmailFromBasename
   } = useBasename();
 
-  const [useWalletAuth, setUseWalletAuth] = useState(true);
+  const [useWalletAuth, setUseWalletAuth] = useState(false);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [embeddedEmail, setEmbeddedEmail] = useState('');
@@ -264,7 +266,35 @@ export default function RegisterPage() {
     setIsFinishingEmbedded(true);
     setError('');
     try {
-      await register(constructedEmail, 'coinbase-embedded', 'wallet', evmAddress);
+      // Import contract address and ABI
+      const { BASEMAILER_ADDRESS, baseMailerAbi } = await import('@/lib/contracts');
+      const { encodeFunctionData } = await import('viem');
+
+      // Encode the contract function call
+      const data = encodeFunctionData({
+        abi: baseMailerAbi,
+        functionName: 'registerEmailWithEmbeddedWallet',
+        args: [constructedEmail]
+      });
+
+      // Send transaction using CDP's sendEvmTransaction
+      const sendTransaction = async () => {
+        const result = await sendEvmTransaction({
+          transaction: {
+            to: BASEMAILER_ADDRESS,
+            data: data as `0x${string}`,
+            chainId: 84532, // Base Sepolia
+            type: "eip1559",
+          },
+          evmAccount: evmAddress,
+          network: "base-sepolia",
+        });
+
+        return result.transactionHash;
+      };
+
+      // Use the new registerWithEmbeddedWallet method from authService
+      await authService.registerWithEmbeddedWallet(constructedEmail, evmAddress, sendTransaction);
       setEmbeddedComplete(true);
       setDialogTitle('Account Created');
       setDialogDescription('Welcome to DexMail! Redirecting you to your inbox.');
@@ -345,7 +375,7 @@ export default function RegisterPage() {
             }}
           />
           <Label htmlFor="use-wallet" className="text-sm font-medium text-slate-700">
-            Register with wallet and auto-generate email from basename
+            Use external wallet instead of Coinbase embedded wallet
           </Label>
         </div>
 
@@ -483,6 +513,13 @@ export default function RegisterPage() {
                         'Finish creating account'
                       )}
                     </Button>
+
+                    <div className="text-sm text-slate-600">
+                      Already have an account?{" "}
+                      <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover font-medium">
+                        Sign in
+                      </Link>
+                    </div>
                   </div>
                 </>
               ) : (
@@ -660,35 +697,7 @@ export default function RegisterPage() {
           )}
         </div>
 
-        {/* Create Account Button (for traditional registration only) - HIDDEN/COMMENTED 
-        {!useWalletAuth && (
-          <div className="space-y-4">
-            <Button
-              onClick={handleTraditionalRegistration}
-              disabled={isLoading}
-              className="w-full h-12 bg-brand-blue hover:bg-brand-blue-hover text-white font-semibold rounded-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Account...
-                </>
-              ) : (
-                'Create Account'
-              )}
-            </Button>
-
-            <div className="text-sm text-slate-600">
-              Already have an account?{" "}
-              <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover font-medium">
-                Sign in
-              </Link>
-            </div>
-          </div>
-        )}
-        */}
-
-        {/* Sign in link for wallet users */}
+        {/* Sign in link */}
         {useWalletAuth && !authComplete && (
           <div className="text-sm text-slate-600">
             Already have an account?{" "}

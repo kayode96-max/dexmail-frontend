@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useAccount } from 'wagmi';
+import { useSignOut } from '@coinbase/cdp-hooks';
 import { authService } from '@/lib/auth-service';
 import { User } from '@/lib/types';
 
@@ -9,9 +10,9 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password?: string, signature?: string, authType?: 'traditional' | 'wallet') => Promise<void>;
+  login: (email: string, password?: string, signature?: string, authType?: 'wallet') => Promise<void>;
   loginWithWallet: (email: string, walletAddress: string, signature: string) => Promise<void>;
-  register: (email: string, password: string, authType?: 'traditional' | 'wallet', walletAddress?: string, signature?: string) => Promise<void>;
+  register: (email: string, password: string, authType?: 'wallet' | 'coinbase-embedded', walletAddress?: string, signature?: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { address, isConnected, isConnecting, isReconnecting } = useAccount();
+  const { signOut: cdpSignOut } = useSignOut();
 
   useEffect(() => {
     // Check if user is already authenticated on mount
@@ -80,15 +82,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     email: string,
     password?: string,
     signature?: string,
-    authType: 'traditional' | 'wallet' = 'traditional'
+    authType: 'wallet' = 'wallet'
   ) => {
-    const response = await authService.login({
-      email,
-      password,
-      signature,
-      authType,
-    });
-    setUser(response.user);
+    console.log('[AuthContext] login called with:', { email, authType, hasPassword: !!password, hasSignature: !!signature });
+    try {
+      const response = await authService.login({
+        email,
+        password,
+        signature,
+        authType,
+      });
+      console.log('[AuthContext] login response:', response);
+      setUser(response.user);
+      console.log('[AuthContext] user set successfully');
+    } catch (error) {
+      console.error('[AuthContext] login error:', error);
+      throw error;
+    }
   };
 
   const loginWithWallet = async (email: string, walletAddress: string, signature: string) => {
@@ -99,7 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = async (
     email: string,
     password: string,
-    authType: 'traditional' | 'wallet' = 'traditional',
+    authType: 'wallet' | 'coinbase-embedded' = 'wallet',
     walletAddress?: string,
     signature?: string
   ) => {
@@ -113,9 +123,29 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(response.user);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    console.log('[AuthContext] Logout initiated');
+
+    // Sign out from CDP if user is using embedded wallet
+    if (user?.authType === 'coinbase-embedded') {
+      try {
+        await cdpSignOut();
+        console.log('[AuthContext] Signed out from CDP');
+      } catch (error) {
+        console.error('[AuthContext] Failed to sign out from CDP:', error);
+      }
+    }
+
+    // Clear all auth data
     authService.logout();
     setUser(null);
+
+    console.log('[AuthContext] Logout complete, all auth context cleared');
+
+    // Redirect to login page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
   };
 
   const refreshUser = async () => {

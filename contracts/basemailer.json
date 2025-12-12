@@ -3,55 +3,6 @@
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "relayer",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "authorized",
-				"type": "bool"
-			}
-		],
-		"name": "authorizeRelayer",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "email",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "claimantOwner",
-				"type": "address"
-			}
-		],
-		"name": "claimWallet",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "email",
-				"type": "string"
-			}
-		],
-		"name": "deployMyWallet",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "_initialOwner",
 				"type": "address"
 			}
@@ -217,39 +168,6 @@
 		"type": "event"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "cid",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "recipientEmail",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "originalSender",
-				"type": "string"
-			},
-			{
-				"internalType": "bool",
-				"name": "isExternal",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "hasCrypto",
-				"type": "bool"
-			}
-		],
-		"name": "indexMail",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -306,13 +224,6 @@
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "pause",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -324,37 +235,6 @@
 		],
 		"name": "Paused",
 		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "email",
-				"type": "string"
-			}
-		],
-		"name": "registerEmail",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "email",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "userAddress",
-				"type": "address"
-			}
-		],
-		"name": "registerEmailWithPassword",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -376,151 +256,6 @@
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "recipientEmail",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "isNft",
-				"type": "bool"
-			}
-		],
-		"name": "sendCryptoToEmail",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "cid",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "recipientEmail",
-				"type": "string"
-			},
-			{
-				"internalType": "bool",
-				"name": "isExternal",
-				"type": "bool"
-			},
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "isNft",
-				"type": "bool"
-			}
-		],
-		"name": "sendMailWithCrypto",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes32",
-				"name": "emailHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "address",
-				"name": "nftContract",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "sendNftToEmail",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes32",
-				"name": "emailHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "sendToEmail",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "newMax",
-				"type": "uint256"
-			}
-		],
-		"name": "setMaxTransfersPerEmail",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "newCooldown",
-				"type": "uint256"
-			}
-		],
-		"name": "setTransferCooldown",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -532,26 +267,6 @@
 		],
 		"name": "TransferCooldownUpdated",
 		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "unpause",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	},
 	{
 		"anonymous": false,
@@ -612,9 +327,28 @@
 	},
 	{
 		"inputs": [],
-		"name": "withdrawFees",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"name": "MAX_EMAIL_LENGTH",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MIN_TRANSFER_AMOUNT",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -640,6 +374,24 @@
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "relayer",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "authorized",
+				"type": "bool"
+			}
+		],
+		"name": "authorizeRelayer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "",
 				"type": "address"
 			}
@@ -653,6 +405,24 @@
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "email",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "claimantOwner",
+				"type": "address"
+			}
+		],
+		"name": "claimWallet",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -691,6 +461,19 @@
 			}
 		],
 		"stateMutability": "pure",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "email",
+				"type": "string"
+			}
+		],
+		"name": "deployMyWallet",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1041,6 +824,39 @@
 		"inputs": [
 			{
 				"internalType": "string",
+				"name": "cid",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "recipientEmail",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "originalSender",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isExternal",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "hasCrypto",
+				"type": "bool"
+			}
+		],
+		"name": "indexMail",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
 				"name": "email",
 				"type": "string"
 			}
@@ -1169,33 +985,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "MAX_EMAIL_LENGTH",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "maxTransfersPerEmail",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "MIN_TRANSFER_AMOUNT",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1217,6 +1007,13 @@
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "pause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1287,6 +1084,177 @@
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "email",
+				"type": "string"
+			}
+		],
+		"name": "registerEmail",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "email",
+				"type": "string"
+			}
+		],
+		"name": "registerEmailWithEmbeddedWallet",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "recipientEmail",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isNft",
+				"type": "bool"
+			}
+		],
+		"name": "sendCryptoToEmail",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "cid",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "recipientEmail",
+				"type": "string"
+			},
+			{
+				"internalType": "bool",
+				"name": "isExternal",
+				"type": "bool"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isNft",
+				"type": "bool"
+			}
+		],
+		"name": "sendMailWithCrypto",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "emailHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "nftContract",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "sendNftToEmail",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "emailHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "sendToEmail",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newMax",
+				"type": "uint256"
+			}
+		],
+		"name": "setMaxTransfersPerEmail",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newCooldown",
+				"type": "uint256"
+			}
+		],
+		"name": "setTransferCooldown",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "transferCooldown",
 		"outputs": [
@@ -1316,6 +1284,33 @@
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "unpause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "withdrawFees",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	}
 ]

@@ -212,18 +212,19 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         emit EmailRegistered(email, msg.sender);
     }
     
-    function registerEmailWithPassword(
-        string calldata email,
-        address userAddress
-    ) external onlyRelayer whenNotPaused {
+    /**
+     * @notice Register email with embedded wallet (e.g., Coinbase embedded wallet)
+     * @dev This function is specifically for embedded wallet registrations
+     * @param email The email address to register
+     */
+    function registerEmailWithEmbeddedWallet(string calldata email) external whenNotPaused {
         if (bytes(email).length > MAX_EMAIL_LENGTH) revert EmailTooLong();
         if (emailOwner[email] != address(0)) revert EmailTaken();
-        if (userAddress == address(0)) revert InvalidAddress();
         
-        emailOwner[email] = userAddress;
-        emailHashToOwner[keccak256(abi.encodePacked(email))] = userAddress;
-        addressToEmail[userAddress] = email;
-        emit EmailRegistered(email, userAddress);
+        emailOwner[email] = msg.sender;
+        emailHashToOwner[keccak256(abi.encodePacked(email))] = msg.sender;
+        addressToEmail[msg.sender] = email;
+        emit EmailRegistered(email, msg.sender);
     }
     
     // ============ MAIL INDEXING ============

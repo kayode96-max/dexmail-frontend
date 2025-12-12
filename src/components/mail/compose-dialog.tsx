@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/auth-context';
+import { useSendEvmTransaction, useEvmAddress, useIsSignedIn } from '@coinbase/cdp-hooks';
+import { encodeFunctionData } from 'viem';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +23,6 @@ import { Send, Loader2, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { mailService } from '@/lib/mail-service';
 import { CryptoAsset } from '@/lib/types';
-import { useAuth } from '@/contexts/auth-context';
 import { useMail } from '@/contexts/mail-context';
 
 export function ComposeDialog({
@@ -49,6 +51,9 @@ export function ComposeDialog({
   const { toast } = useToast();
   const { user } = useAuth();
   const { saveDraft } = useMail();
+  const { sendEvmTransaction } = useSendEvmTransaction();
+  const { evmAddress } = useEvmAddress();
+  const { isSignedIn } = useIsSignedIn();
 
   const isPlatformRecipient = to.length > 0 && to.split(',').every(email => email.trim().endsWith('@dexmail.app'));
 
@@ -104,6 +109,17 @@ export function ComposeDialog({
     setIsLoading(true);
 
     try {
+      // Check CDP authentication for embedded wallet users
+      if (user?.authType === 'coinbase-embedded' && !isSignedIn) {
+        toast({
+          title: "Session Expired",
+          description: "Your Coinbase session has expired. Please log in again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const cryptoAssets: CryptoAsset[] = assets.map(a => ({
         type: a.type,
         token: a.contract, // Map contract to token
@@ -112,16 +128,36 @@ export function ComposeDialog({
         tokenId: a.tokenId
       }));
 
-      const result = await mailService.sendEmail({
-        from: user.email, // Use authenticated user's email
-        to: to.split(',').map(e => e.trim()),
-        subject,
-        body,
-        cryptoTransfer: cryptoEnabled ? {
-          enabled: true,
-          assets: cryptoAssets
-        } : undefined
-      });
+      // Create transaction callback for embedded wallets
+      const sendTx = async (args: { to: string; data: string; value?: bigint }) => {
+        const result = await sendEvmTransaction({
+          transaction: {
+            to: args.to as `0x${string}`,
+            data: args.data as `0x${string}`,
+            chainId: 84532, // Base Sepolia
+            type: "eip1559",
+            value: args.value
+          },
+          evmAccount: evmAddress as `0x${string}`,
+          network: "base-sepolia"
+        });
+        return result.transactionHash;
+      };
+
+      const result = await mailService.sendEmail(
+        {
+          from: user.email, // Use authenticated user's email
+          to: to.split(',').map(e => e.trim()),
+          subject,
+          body,
+          cryptoTransfer: cryptoEnabled ? {
+            enabled: true,
+            assets: cryptoAssets
+          } : undefined
+        },
+        user?.authType, // Pass auth type
+        user?.authType === 'coinbase-embedded' ? sendTx : undefined // Pass transaction callback for embedded wallets
+      );
 
       // Show different success messages based on transfer type
       if (cryptoEnabled && result.isDirectTransfer) {
@@ -190,7 +226,10 @@ export function ComposeDialog({
               className="col-span-3"
               placeholder="recipient@example.com"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/([^, ]+@dexmail\.app)/gi, match => match.toLowerCase());
+                setTo(value);
+              }}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">

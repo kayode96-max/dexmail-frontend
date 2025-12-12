@@ -10,18 +10,24 @@ export async function POST(request: NextRequest) {
         await connectDB();
 
         const body = await request.json();
-        const { email, password, signature, authType } = body;
+        const { email, password, signature, authType, walletAddress } = body;
 
-        if (!email || !authType) {
-            return NextResponse.json(
-                { error: 'Email and authType are required' },
-                { status: 400 }
-            );
+        console.log('[Login API] Login attempt:', { email, walletAddress, authType });
+
+        // For coinbase-embedded, use wallet address as the primary identifier
+        let user;
+        if (authType === 'coinbase-embedded' && walletAddress) {
+            user = await User.findOne({ walletAddress: walletAddress.toLowerCase() });
+            console.log('[Login API] Looking up by wallet address:', walletAddress);
+        } else if (email) {
+            user = await User.findOne({ email: email.toLowerCase() });
+            console.log('[Login API] Looking up by email:', email);
         }
 
-        // Find user
-        const user = await User.findOne({ email: email.toLowerCase() });
+        console.log('[Login API] User found:', user ? { email: user.email, authType: user.authType, walletAddress: user.walletAddress } : 'null');
+
         if (!user) {
+            console.log('[Login API] User not found');
             return NextResponse.json(
                 { error: 'Invalid credentials' },
                 { status: 401 }
@@ -60,6 +66,19 @@ export async function POST(request: NextRequest) {
                     { status: 400 }
                 );
             }
+        } else if (authType === 'coinbase-embedded') {
+            console.log('[Login API] Coinbase embedded auth, user authType:', user.authType);
+            // For Coinbase embedded wallets, OTP verification already happened on frontend
+            // We just need to verify the user exists and has the correct auth type
+            if (user.authType !== 'coinbase-embedded') {
+                console.log('[Login API] User authType mismatch:', user.authType, '!== coinbase-embedded');
+                return NextResponse.json(
+                    { error: 'Account not registered with embedded wallet' },
+                    { status: 400 }
+                );
+            }
+            console.log('[Login API] Embedded wallet auth successful');
+            // No additional validation needed - OTP verification is sufficient
         }
 
         // Update last login

@@ -25,9 +25,12 @@ export function UserNav() {
   const { user } = useAuth();
 
   // Slice wallet address to show first 6 and last 4 characters
-  const slicedAddress = address
-    ? `${address.slice(0, 6)}...${address.slice(-4)}`
-    : 'Not Connected';
+  // For embedded wallets, use the wallet address from user profile
+  // For external wallets, use the connected address from wagmi
+  const displayAddress = user?.walletAddress || address;
+  const walletText = displayAddress
+    ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`
+    : 'No wallet';
 
   const displayEmail = user?.email || 'user@example.com';
 
@@ -40,7 +43,7 @@ export function UserNav() {
             <AvatarFallback>U</AvatarFallback>
           </Avatar>
           <div className="text-left group-data-[collapsible=icon]/sidebar:hidden">
-            <p className="text-sm font-medium leading-none">{slicedAddress}</p>
+            <p className="text-sm font-medium leading-none">{walletText}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {displayEmail}
             </p>
@@ -51,7 +54,7 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{slicedAddress}</p>
+            <p className="text-sm font-medium leading-none">{walletText}</p>
             <p className="text-xs leading-none text-muted-foreground">
               {displayEmail}
             </p>

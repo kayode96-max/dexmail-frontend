@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 export interface IUser extends Document {
     email: string;
     password?: string;
-    authType: 'traditional' | 'wallet' | 'hybrid';
+    authType: 'wallet' | 'coinbase-embedded';
     walletAddress?: string;
     emailVerified: boolean;
     createdAt: Date;
@@ -22,15 +22,13 @@ const UserSchema = new Schema<IUser>({
     },
     password: {
         type: String,
-        required: function (this: IUser) {
-            return this.authType === 'traditional' || this.authType === 'hybrid';
-        },
+        required: false, // Password not required for wallet-based auth
     },
     authType: {
         type: String,
-        enum: ['traditional', 'wallet', 'hybrid'],
+        enum: ['wallet', 'coinbase-embedded'],
         required: true,
-        default: 'traditional',
+        default: 'coinbase-embedded',
     },
     walletAddress: {
         type: String,

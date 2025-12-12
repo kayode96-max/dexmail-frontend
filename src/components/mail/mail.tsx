@@ -155,6 +155,11 @@ import { useAuth } from '@/contexts/auth-context';
 
 function MobileHeader() {
   const { user, logout } = useAuth();
+
+  // Debug logging
+  console.log('[MobileHeader] User from AuthContext:', user);
+  console.log('[MobileHeader] Wallet address:', user?.walletAddress);
+
   const userAvatar = PlaceHolderImages.find(
     (img) => img.id === 'user-avatar-1'
   );

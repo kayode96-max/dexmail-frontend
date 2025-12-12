@@ -3,7 +3,7 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ import { useEvmAddress, useIsSignedIn, useSignInWithEmail, useVerifyEmailOTP, us
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { login, loginWithWallet } = useAuth();
+  const { login, loginWithWallet, refreshUser } = useAuth();
   const { signInWithEmail } = useSignInWithEmail();
   const { verifyEmailOTP } = useVerifyEmailOTP();
   const { isSignedIn } = useIsSignedIn();
@@ -44,10 +44,8 @@ export default function LoginPage() {
     signMessage
   } = useWallet();
 
-  const [useWalletAuth, setUseWalletAuth] = useState(true);
+  const [useWalletAuth, setUseWalletAuth] = useState(false);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [authComplete, setAuthComplete] = useState(false);
   const [error, setError] = useState('');
 
@@ -56,10 +54,27 @@ export default function LoginPage() {
   const [otpCode, setOtpCode] = useState('');
   const [otpFlowId, setOtpFlowId] = useState<string | null>(null);
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [isFinishingEmbedded, setIsFinishingEmbedded] = useState(false);
   const [embeddedComplete, setEmbeddedComplete] = useState(false);
+
+  // Auto sign out from CDP when landing on login page (after logout)
+  useEffect(() => {
+    const autoSignOut = async () => {
+      if (isSignedIn) {
+        try {
+          console.log('[Login] Auto-signing out from previous CDP session');
+          await signOut();
+        } catch (error) {
+          console.error('[Login] Failed to auto sign out:', error);
+        }
+      }
+    };
+    autoSignOut();
+  }, []); // Run once on mount
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogTitle, setDialogTitle] = useState('');
   const [dialogDescription, setDialogDescription] = useState('');
@@ -120,37 +135,6 @@ export default function LoginPage() {
         description: errorMessage,
         variant: "destructive",
       });
-    }
-  };
-
-  const handleTraditionalLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError('Please enter both email and password');
-      return;
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      await login(email, password, undefined, 'traditional');
-
-      toast({
-        title: "Login Successful",
-        description: "Welcome back to DexMail!",
-      });
-
-      router.push('/dashboard');
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
-      setError(errorMessage);
-      toast({
-        title: "Login Failed",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -225,6 +209,7 @@ export default function LoginPage() {
   };
 
   const handleVerifyOtp = async () => {
+    console.log('[Login] handleVerifyOtp called');
     if (!otpFlowId || !otpCode.trim()) {
       setError('Enter the 6-digit code to continue');
       return;
@@ -232,17 +217,22 @@ export default function LoginPage() {
     setIsVerifyingOtp(true);
     setError('');
     try {
+      console.log('[Login] Verifying OTP with flowId:', otpFlowId);
       await verifyEmailOTP({ flowId: otpFlowId, otp: otpCode.trim() });
+      console.log('[Login] OTP verified successfully');
+
+      // Set flag - useEffect will handle login when CDP session is ready
+      setIsOtpVerified(true);
+
       setDialogTitle('Email Verified');
-      setDialogDescription('Your email is verified. Signing you in...');
+      setDialogDescription('Setting up your wallet session...');
       setDialogOpen(true);
       toast({
         title: "Verified",
-        description: "Email verified. Signing you in...",
+        description: "Setting up your session...",
       });
-      // Proceed to login
-      await handleEmbeddedLogin();
     } catch (err) {
+      console.error('[Login] OTP verification failed:', err);
       const message = err instanceof Error ? err.message : 'Invalid or expired code';
       setError(message);
       toast({
@@ -251,25 +241,87 @@ export default function LoginPage() {
         variant: "destructive",
       });
     } finally {
+      console.log('[Login] Setting isVerifyingOtp to false');
       setIsVerifyingOtp(false);
     }
   };
 
-  const handleEmbeddedLogin = async () => {
-    if (!isSignedIn) {
-      setError('Please complete the sign-in process first');
-      return;
-    }
-    if (!evmAddress) {
-      setError('Wallet address unavailable. Try signing in again.');
-      return;
-    }
+  // Auto-login when CDP session becomes ready after OTP verification
+  useEffect(() => {
+    const attemptLogin = async () => {
+      if (isOtpVerified && isSignedIn && evmAddress && !isFinishingEmbedded && !embeddedComplete) {
+        console.log('[Login] CDP session ready! Auto-triggering login');
+        console.log('[Login] evmAddress:', evmAddress);
+
+        setDialogDescription('Signing you in...');
+
+        try {
+          await handleEmbeddedWalletLogin(evmAddress);
+        } catch (err) {
+          console.error('[Login] Auto-login failed:', err);
+          const message = err instanceof Error ? err.message : 'Login failed';
+          setError(message);
+          toast({
+            title: "Login failed",
+            description: message,
+            variant: "destructive",
+          });
+          setIsOtpVerified(false); // Reset to allow retry
+        }
+      }
+    };
+
+    attemptLogin();
+  }, [isOtpVerified, isSignedIn, evmAddress, isFinishingEmbedded, embeddedComplete]);
+
+  const handleEmbeddedWalletLogin = async (walletAddress: string) => {
+    console.log('[Login] handleEmbeddedWalletLogin started');
+    console.log('[Login] Email:', embeddedEmail);
+    console.log('[Login] Wallet address:', walletAddress);
 
     setIsFinishingEmbedded(true);
-    setError('');
     try {
-      // Login with embedded wallet - using auth context
-      await login(embeddedEmail, evmAddress, evmAddress, 'wallet');
+      // Login using wallet address (primary identifier for embedded wallets)
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+      console.log('[Login] Sending login request to backend');
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: walletAddress.toLowerCase(),
+          authType: 'coinbase-embedded',
+        }),
+      });
+
+      console.log('[Login] Backend response status:', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[Login] Backend login failed:', errorData);
+        throw new Error(errorData.error || 'Login failed');
+      }
+
+      const authResponse = await response.json();
+      console.log('[Login] Login successful, auth response:', authResponse);
+
+      // Store auth data in localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('auth_token', authResponse.token);
+        localStorage.setItem('auth_user', JSON.stringify(authResponse.user));
+      }
+
+      // Update AuthContext with the logged-in user
+      try {
+        await refreshUser();
+        console.log('[Login] User context refreshed successfully');
+      } catch (err) {
+        console.error('[Login] Failed to refresh user context:', err);
+        // Continue anyway since data is in localStorage
+      }
+
       setEmbeddedComplete(true);
       setDialogTitle('Login Successful');
       setDialogDescription('Welcome back to DexMail! Redirecting you to your inbox.');
@@ -278,8 +330,10 @@ export default function LoginPage() {
         title: "Login successful",
         description: "Welcome back to DexMail!",
       });
+      console.log('[Login] Redirecting to dashboard in 1.2s');
       setTimeout(() => router.push('/dashboard'), 1200);
     } catch (err) {
+      console.error('[Login] Embedded wallet login failed:', err);
       const message = err instanceof Error ? err.message : 'Failed to login';
       setError(message);
       toast({
@@ -288,6 +342,55 @@ export default function LoginPage() {
         variant: "destructive",
       });
     } finally {
+      setIsFinishingEmbedded(false);
+    }
+  };
+
+  const handleEmbeddedLogin = async () => {
+    console.log('[Login] handleEmbeddedLogin started');
+    console.log('[Login] isSignedIn:', isSignedIn);
+    console.log('[Login] evmAddress:', evmAddress);
+    console.log('[Login] embeddedEmail:', embeddedEmail);
+
+    if (!isSignedIn) {
+      console.error('[Login] Not signed in!');
+      setError('Please complete the sign-in process first');
+      return;
+    }
+    if (!evmAddress) {
+      console.error('[Login] No EVM address!');
+      setError('Wallet address unavailable. Try signing in again.');
+      return;
+    }
+
+    setIsFinishingEmbedded(true);
+    setError('');
+    try {
+      console.log('[Login] Calling login with:', { email: embeddedEmail, address: evmAddress });
+      // Login with embedded wallet - using auth context
+      await login(embeddedEmail, evmAddress, evmAddress, 'wallet');
+      console.log('[Login] Login successful');
+      setEmbeddedComplete(true);
+      setDialogTitle('Login Successful');
+      setDialogDescription('Welcome back to DexMail! Redirecting you to your inbox.');
+      setDialogOpen(true);
+      toast({
+        title: "Login successful",
+        description: "Welcome back to DexMail!",
+      });
+      console.log('[Login] Redirecting to dashboard in 1.2s');
+      setTimeout(() => router.push('/dashboard'), 1200);
+    } catch (err) {
+      console.error('[Login] Login failed:', err);
+      const message = err instanceof Error ? err.message : 'Failed to login';
+      setError(message);
+      toast({
+        title: "Login failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      console.log('[Login] Setting isFinishingEmbedded to false');
       setIsFinishingEmbedded(false);
     }
   };
@@ -593,32 +696,6 @@ export default function LoginPage() {
             </div>
           )}
         </div>
-
-        {!useWalletAuth && (
-          <div className="space-y-4">
-            <Button
-              onClick={handleTraditionalLogin}
-              disabled={isLoading}
-              className="w-full h-12 bg-brand-blue hover:bg-brand-blue-hover text-white font-semibold rounded-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing In...
-                </>
-              ) : (
-                'Sign In'
-              )}
-            </Button>
-
-            <div className="text-sm text-slate-600">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-brand-blue hover:text-brand-blue-hover font-medium">
-                Sign up
-              </Link>
-            </div>
-          </div>
-        )}
 
         {/* Sign up link */}
         {!authComplete && !embeddedComplete && (

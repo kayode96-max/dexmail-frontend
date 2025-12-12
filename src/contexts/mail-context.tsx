@@ -34,8 +34,12 @@ export function MailProvider({ children }: { children: ReactNode }) {
     const [mails, setMails] = useState<Mail[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [statusVersion, setStatusVersion] = useState(0);
-    const { address, isConnected } = useAccount();
+    const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
     const { user } = useAuth();
+
+    // Prioritize user.walletAddress for embedded wallets
+    const address = user?.walletAddress || wagmiAddress;
+    const isConnected = !!address;
 
     const refreshMails = async (silent = false) => {
         if (!isConnected || !address || !user?.email) {
@@ -51,7 +55,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
             // Fetch both inbox and sent emails in parallel
             const [fetchedInbox, fetchedSent, fetchedDrafts] = await Promise.all([
                 mailService.getInbox(user.email),
-                mailService.getSent(user.email),
+                mailService.getSent(user.email, address),
                 mailService.getDrafts(user.email)
             ]);
 

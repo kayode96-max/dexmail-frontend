@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { priceService } from "@/lib/price-service";
 import { nftService, NFT } from "@/lib/nft-service";
 import { tokenService } from "@/lib/token-service";
+import { useAuth } from "@/contexts/auth-context";
 
 
 
@@ -105,7 +106,13 @@ function NFTGallery({ nfts }: { nfts: NFT[] }) {
 }
 
 export default function ProfilePage() {
-  const { address, isConnected } = useAccount();
+  const { address: wagmiAddress, isConnected: wagmiConnected } = useAccount();
+  const { user } = useAuth();
+
+  // Prioritize user.walletAddress for embedded wallets, fall back to wagmi for external wallets
+  const address = (user?.walletAddress || wagmiAddress) as `0x${string}` | undefined;
+  const isConnected = !!address;
+
   const { data: balanceData, isLoading: isBalanceLoading } = useBalance({
     address: address,
   });

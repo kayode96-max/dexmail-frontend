@@ -2,9 +2,9 @@
 
 export interface User {
   email: string;
-  authType: 'traditional' | 'wallet' | 'hybrid';
-  walletAddress: string | null;
-  emailVerified: boolean;
+  authType: 'wallet' | 'coinbase-embedded';
+  walletAddress?: string;
+  emailVerified?: boolean;
   createdAt?: string;
   lastLogin?: string;
 }

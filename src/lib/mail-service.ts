@@ -2,7 +2,7 @@ import { EmailMessage, CryptoAsset } from './types';
 import { readContract, writeContract, waitForTransactionReceipt } from '@wagmi/core';
 import { wagmiConfig } from './wagmi-config';
 import { BASEMAILER_ADDRESS, baseMailerAbi } from './contracts';
-import { parseUnits, parseEther, stringToHex } from 'viem';
+import { parseUnits, parseEther, stringToHex, encodeFunctionData } from 'viem';
 import { cryptoService } from './crypto-service';
 import { generateClaimCode, storeClaimCode, getClaimUrl, formatClaimCode } from './claim-code';
 
@@ -47,7 +47,11 @@ const EMAIL_STATUS_KEY = 'dexmail_email_status';
 
 
 class MailService {
-  async sendEmail(data: SendEmailData): Promise<SendEmailResponse & { claimCode?: string; isDirectTransfer?: boolean }> {
+  async sendEmail(
+    data: SendEmailData,
+    authType?: 'wallet' | 'coinbase-embedded',
+    sendTransaction?: (args: { to: string; data: string; value?: bigint }) => Promise<string>
+  ): Promise<SendEmailResponse & { claimCode?: string; isDirectTransfer?: boolean }> {
     let isRecipientRegistered = false;
     let isWalletDeployed = false;
 
@@ -204,20 +208,44 @@ class MailService {
         await cryptoService.ensureApproval(tokenAddress, amount);
       }
 
-      txHash = await writeContract(wagmiConfig, {
-        address: BASEMAILER_ADDRESS,
-        abi: baseMailerAbi,
-        functionName: 'sendMailWithCrypto',
-        args: [
-          cid,
-          recipient,
-          isExternal,
-          tokenAddress,
-          amount,
-          isNft
-        ],
-        value: asset.type === 'eth' ? amount : BigInt(0)
-      });
+      // Use appropriate transaction method based on auth type
+      if (authType === 'coinbase-embedded' && sendTransaction) {
+        // Embedded wallet: use CDP transaction
+        const encodedData = encodeFunctionData({
+          abi: baseMailerAbi,
+          functionName: 'sendMailWithCrypto',
+          args: [
+            cid,
+            recipient,
+            isExternal,
+            tokenAddress,
+            amount,
+            isNft
+          ]
+        });
+
+        txHash = await sendTransaction({
+          to: BASEMAILER_ADDRESS,
+          data: encodedData,
+          value: asset.type === 'eth' ? amount : BigInt(0)
+        });
+      } else {
+        // External wallet: use wagmi
+        txHash = await writeContract(wagmiConfig, {
+          address: BASEMAILER_ADDRESS,
+          abi: baseMailerAbi,
+          functionName: 'sendMailWithCrypto',
+          args: [
+            cid,
+            recipient,
+            isExternal,
+            tokenAddress,
+            amount,
+            isNft
+          ],
+          value: asset.type === 'eth' ? amount : BigInt(0)
+        });
+      }
 
       console.log('[MailService] Sent mail with crypto. Tx:', txHash);
       transferHashes.push(txHash);
@@ -236,12 +264,28 @@ class MailService {
       }
 
     } else if (data.to.length > 0) {
-      txHash = await writeContract(wagmiConfig, {
-        address: BASEMAILER_ADDRESS,
-        abi: baseMailerAbi,
-        functionName: 'indexMail',
-        args: [cid, recipient, "", isExternal, false]
-      });
+      // Use appropriate transaction method based on auth type
+      if (authType === 'coinbase-embedded' && sendTransaction) {
+        // Embedded wallet: use CDP transaction
+        const encodedData = encodeFunctionData({
+          abi: baseMailerAbi,
+          functionName: 'indexMail',
+          args: [cid, recipient, "", isExternal, false]
+        });
+
+        txHash = await sendTransaction({
+          to: BASEMAILER_ADDRESS,
+          data: encodedData
+        });
+      } else {
+        // External wallet: use wagmi
+        txHash = await writeContract(wagmiConfig, {
+          address: BASEMAILER_ADDRESS,
+          abi: baseMailerAbi,
+          functionName: 'indexMail',
+          args: [cid, recipient, "", isExternal, false]
+        });
+      }
       console.log('[MailService] Indexed mail on blockchain with tx:', txHash);
     }
 
@@ -499,17 +543,25 @@ class MailService {
     }
   }
 
-  async getSent(email: string): Promise<EmailMessage[]> {
+  async getSent(email: string, walletAddress?: string): Promise<EmailMessage[]> {
     try {
       const cacheKey = `dexmail_sent_${email}`;
       const cache = this.getCache(cacheKey);
 
       console.log(`[MailService] Fetching sent emails for: ${email}`);
 
-      const { getAccount } = await import('@wagmi/core');
-      const account = getAccount(wagmiConfig);
+      // Use provided wallet address or fall back to wagmi
+      let senderAddress: `0x${string}` | undefined;
 
-      if (!account.address) return [];
+      if (walletAddress) {
+        senderAddress = walletAddress as `0x${string}`;
+      } else {
+        const { getAccount } = await import('@wagmi/core');
+        const account = getAccount(wagmiConfig);
+        senderAddress = account.address;
+      }
+
+      if (!senderAddress) return [];
 
       const { getPublicClient } = await import('@wagmi/core');
       const publicClient = getPublicClient(wagmiConfig);
@@ -535,7 +587,7 @@ class MailService {
           ]
         },
         args: {
-          sender: account.address
+          sender: senderAddress
         },
         fromBlock: fromBlock,
         toBlock: currentBlock
