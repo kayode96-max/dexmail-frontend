@@ -49,7 +49,7 @@
     "lucide-react": "^0.475.0",
     "mailparser": "^3.9.0",
     "mongoose": "^9.0.0",
-    "next": "^16.0.7",
+    "next": "16.0.10",
     "next-themes": "^0.3.0",
     "patch-package": "^8.0.0",
     "react": "^18.3.1",
