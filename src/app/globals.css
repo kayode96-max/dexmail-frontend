@@ -8,13 +8,16 @@ body {
 
 @layer base {
   :root {
-    --background: 216 20% 97%; /* #f3f5f7 */
-    --foreground: 240 4% 17%; /* #2c2a2a */
+    --background: 216 20% 97%;
+    /* #f3f5f7 */
+    --foreground: 240 4% 17%;
+    /* #2c2a2a */
     --card: 0 0% 100%;
     --card-foreground: 240 4% 17%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 4% 17%;
-    --primary: 217 100% 50%; /* #0267ff */
+    --primary: 217 100% 50%;
+    /* #0267ff */
     --primary-foreground: 0 0% 100%;
     --secondary: 240 5% 96%;
     --secondary-foreground: 240 4% 17%;
@@ -70,7 +73,7 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    
+
     /* Sidebar dark variables */
     --sidebar-background: 240 4% 12%;
     --sidebar-foreground: 220 13% 85%;
@@ -87,30 +90,23 @@ body {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }
 }
 
 /* Mobile viewport height fix for browser UI */
-:root {
-  --vh: 1vh;
-}
-
-@supports (height: 100dvh) {
-  :root {
-    --vh: 1dvh;
-  }
-}
-
+/* JavaScript sets --vh dynamically via useViewportHeight hook */
 .h-screen-mobile {
   height: calc(var(--vh, 1vh) * 100);
+  min-height: -webkit-fill-available;
 }
 
 /* Autofill Override */
 input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus, 
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px white inset !important;
   -webkit-text-fill-color: black !important;
@@ -154,63 +150,83 @@ input:-webkit-autofill:active {
     clip: rect(42px, 9999px, 44px, 0);
     transform: skew(0.3deg);
   }
+
   5% {
     clip: rect(17px, 9999px, 94px, 0);
   }
+
   10% {
     clip: rect(40px, 9999px, 66px, 0);
   }
+
   15% {
     clip: rect(47px, 9999px, 80px, 0);
   }
+
   20% {
     clip: rect(12px, 9999px, 54px, 0);
   }
+
   25% {
     clip: rect(34px, 9999px, 42px, 0);
   }
+
   30% {
     clip: rect(87px, 9999px, 92px, 0);
   }
+
   35% {
     clip: rect(12px, 9999px, 87px, 0);
   }
+
   40% {
     clip: rect(38px, 9999px, 44px, 0);
   }
+
   45% {
     clip: rect(19px, 9999px, 90px, 0);
   }
+
   50% {
     clip: rect(59px, 9999px, 66px, 0);
   }
+
   55% {
     clip: rect(21px, 9999px, 79px, 0);
   }
+
   60% {
     clip: rect(5px, 9999px, 93px, 0);
   }
+
   65% {
     clip: rect(32px, 9999px, 35px, 0);
   }
+
   70% {
     clip: rect(89px, 9999px, 91px, 0);
   }
+
   75% {
     clip: rect(13px, 9999px, 74px, 0);
   }
+
   80% {
     clip: rect(45px, 9999px, 47px, 0);
   }
+
   85% {
     clip: rect(78px, 9999px, 83px, 0);
   }
+
   90% {
     clip: rect(36px, 9999px, 49px, 0);
   }
+
   95% {
     clip: rect(23px, 9999px, 81px, 0);
   }
+
   100% {
     clip: rect(1px, 9999px, 95px, 0);
   }
@@ -221,63 +237,83 @@ input:-webkit-autofill:active {
     clip: rect(65px, 9999px, 100px, 0);
     transform: skew(0.2deg);
   }
+
   5% {
     clip: rect(83px, 9999px, 32px, 0);
   }
+
   10% {
     clip: rect(2px, 9999px, 86px, 0);
   }
+
   15% {
     clip: rect(91px, 99_99px, 95px, 0);
   }
+
   20% {
     clip: rect(34px, 9999px, 8px, 0);
   }
+
   25% {
     clip: rect(54px, 9999px, 97px, 0);
   }
+
   30% {
     clip: rect(2px, 9999px, 48px, 0);
   }
+
   35% {
     clip: rect(83px, 9999px, 5px, 0);
   }
+
   40% {
     clip: rect(49px, 9999px, 87px, 0);
   }
+
   45% {
     clip: rect(23px, 9999px, 5px, 0);
   }
+
   50% {
     clip: rect(1px, 9999px, 99px, 0);
   }
+
   55% {
     clip: rect(43px, 9999px, 56px, 0);
   }
+
   60% {
     clip: rect(12px, 9999px, 8px, 0);
   }
+
   65% {
     clip: rect(76px, 9999px, 88px, 0);
   }
+
   70% {
     clip: rect(3px, 9999px, 95px, 0);
   }
+
   75% {
     clip: rect(66px, 9999px, 78px, 0);
   }
+
   80% {
     clip: rect(23px, 9999px, 45px, 0);
   }
+
   85% {
     clip: rect(99px, 9999px, 2px, 0);
   }
+
   90% {
     clip: rect(43px, 9999px, 98px, 0);
   }
+
   95% {
     clip: rect(2px, 9999px, 76px, 0);
   }
+
   100% {
     clip: rect(54px, 9999px, 90px, 0);
   }
@@ -287,33 +323,43 @@ input:-webkit-autofill:active {
   0% {
     transform: skew(1deg);
   }
+
   10% {
     transform: skew(0.5deg);
   }
+
   20% {
     transform: skew(-0.5deg);
   }
+
   30% {
     transform: skew(0.2deg);
   }
+
   40% {
     transform: skew(0);
   }
+
   50% {
     transform: skew(-0.8deg);
   }
+
   60% {
     transform: skew(0);
   }
+
   70% {
     transform: skew(0.6deg);
   }
+
   80% {
     transform: skew(-0.1deg);
   }
+
   90% {
     transform: skew(0.4deg);
   }
+
   100% {
     transform: skew(0);
   }

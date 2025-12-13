@@ -9,6 +9,7 @@ import { RainbowProviders } from '@/components/providers/rainbowkit-provider';
 import { AuthProvider } from '@/contexts/auth-context';
 import { useState, useEffect } from 'react';
 import { CDPReactProvider } from '@coinbase/cdp-react';
+import { useViewportHeight } from '@/hooks/use-viewport-height';
 
 export default function RootLayout({
   children,
@@ -17,6 +18,9 @@ export default function RootLayout({
 }>) {
   const [loading, setLoading] = useState(true);
   const projectId = process.env.NEXT_PUBLIC_CDP_PROJECT_ID || '';
+
+  // Set viewport height for mobile
+  useViewportHeight();
 
   useEffect(() => {
     const timer = setTimeout(() => {
