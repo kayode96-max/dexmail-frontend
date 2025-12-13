@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 export function LoadingScreen() {
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-background">
+    <div className="flex h-screen md:h-screen h-screen-mobile items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="relative flex flex-col items-center gap-4">
         <Image
           src="/logo.png"
