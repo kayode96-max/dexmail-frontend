@@ -48,7 +48,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="flex min-h-screen md:min-h-screen h-screen-mobile md:h-auto flex-col bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header with Logo */}
       <div className="flex items-center justify-between p-6">
         <AppLogo />

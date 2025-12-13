@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 export default function NotFound() {
     return (
-        <div className="relative h-screen w-screen overflow-hidden">
+        <div className="relative h-screen md:h-screen h-screen-mobile w-screen overflow-hidden">
             <Image
                 src="/404bg.jpeg"
                 alt="404 Page Not Found"
