@@ -390,18 +390,18 @@ export default function LoginPage() {
 
 
       {/* Illustration - Top on mobile, Left on desktop */}
-      <div className="w-full lg:w-1/2 relative flex-shrink-0 h-96 lg:h-[600px]">
+      <div className="w-full lg:w-3/5 relative flex-shrink-0 h-96 lg:h-[600px]">
         <Image
           src="/illustrations/login.svg"
           alt="Login to DexMail"
           fill
-          className="object-contain p-1 lg:p-0"
+          className="object-contain"
           priority
         />
       </div>
 
       {/* Content */}
-      <div className='text-center space-y-4 lg:space-y-8 w-full lg:w-1/2 px-4 md:px-8 lg:px-12 py-4 lg:py-0 flex flex-col justify-center overflow-y-auto lg:overflow-visible'>
+      <div className='text-center space-y-4 lg:space-y-8 w-full lg:w-2/5 px-4 md:px-8 lg:px-12 py-4 lg:py-0 flex flex-col justify-center overflow-y-auto lg:overflow-visible'>
         <div className="space-y-8 ">
           <h1 className="text-2xl font-bold text-slate-900 leading-tight">
             Welcome Back
@@ -412,7 +412,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form */}
-        <div className="space-y-14">
+        <div className="space-y-14 max-w-[560px] mx-auto w-full">
           {/* Wallet Connection Option */}
           <div className="flex items-center space-x-3 justify-start px-1">
             <Checkbox

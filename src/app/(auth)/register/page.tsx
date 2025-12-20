@@ -324,18 +324,18 @@ export default function RegisterPage() {
 
 
       {/* Illustration - Top on mobile, Left on desktop */}
-      <div className="w-full lg:w-1/2 relative flex-shrink-0 h-96 lg:h-[600px]">
+      <div className="w-full lg:w-3/5 relative flex-shrink-0 h-96 lg:h-[600px]">
         <Image
           src="/illustrations/register.svg"
           alt="Create DexMail Account"
           fill
-          className="object-contain p-1 lg:p-0"
+          className="object-contain"
           priority
         />
       </div>
 
-      {/* Form - Full width on mobile, half width on desktop */}
-      <div className='text-center space-y-4 lg:space-y-8 w-full lg:w-1/2 px-4 md:px-8 lg:px-12 py-4 lg:py-0 flex flex-col justify-center overflow-y-auto lg:overflow-visible'>
+      {/* Form - Full width on mobile, 40% on desktop */}
+      <div className='text-center space-y-4 lg:space-y-8 w-full lg:w-2/5 px-4 md:px-8 lg:px-12 py-4 lg:py-0 flex flex-col justify-center overflow-y-auto lg:overflow-visible'>
         {/* Content */}
         <div className="space-y-8">
           <h1 className="text-2xl font-bold text-slate-900 leading-tight">
@@ -347,7 +347,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Registration Form */}
-        <div className="space-y-14">
+        <div className="space-y-14 max-w-[560px] mx-auto w-full">
           {/* Wallet Registration Option */}
           <div className="flex items-center space-x-3 justify-start px-1">
             <Checkbox
