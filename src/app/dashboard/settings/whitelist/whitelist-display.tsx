@@ -19,7 +19,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
-export function WhitelistDisplay() {
+export function WhitelistDisplay({ refreshTrigger }: { refreshTrigger?: number }) {
     const { user } = useAuth();
     const { toast } = useToast();
     const { sendUserOperation } = useSendUserOperation();
@@ -49,7 +49,7 @@ export function WhitelistDisplay() {
 
     useEffect(() => {
         fetchWhitelist();
-    }, [user?.email]);
+    }, [user?.email, refreshTrigger]);
 
     const handleRemove = async (email: string) => {
         setIsRemoving(email);

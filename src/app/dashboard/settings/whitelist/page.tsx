@@ -36,6 +36,7 @@ export default function WhitelistSettingsPage() {
     const [isLoadingFee, setIsLoadingFee] = useState(false);
     const [isSavingFee, setIsSavingFee] = useState(false);
     const [isSavingWhitelist, setIsSavingWhitelist] = useState(false);
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     // Fetch current fee
     useEffect(() => {
@@ -121,6 +122,13 @@ export default function WhitelistSettingsPage() {
             });
 
             setEmailsToAdd([]);
+            // Trigger refresh in WhitelistDisplay component
+            setRefreshTrigger(prev => prev + 1);
+            
+            // Also add a small delay and refresh for embedded wallets
+            if (user?.authType === 'coinbase-embedded') {
+                setTimeout(() => setRefreshTrigger(prev => prev + 1), 2000);
+            }
         } catch (error: any) {
             console.error('Error updating whitelist:', error);
             toast({
@@ -234,7 +242,7 @@ export default function WhitelistSettingsPage() {
                         <div className="pt-6 border-t">
                             <Label className="mb-4 block">Current Whitelist</Label>
                             {/* List of whitelisted emails would ideally be fetched here */}
-                            <WhitelistDisplay />
+                            <WhitelistDisplay refreshTrigger={refreshTrigger} />
                         </div>
                     </CardContent>
                 </Card>
