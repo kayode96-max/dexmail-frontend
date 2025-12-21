@@ -566,13 +566,13 @@ class MailService {
         return null;
       }
 
-      const gatewayUrl = `https://ipfs.io/ipfs/${actualCid}`;
+      const gatewayUrl = `https://green-managerial-cheetah-105.mypinata.cloud/ipfs/${actualCid}`;
       console.log('[MailService] Fetching from IPFS:', gatewayUrl);
 
       const response = await fetch(gatewayUrl);
 
       if (!response.ok) {
-        console.error(`[MailService] Failed to fetch from IPFS: ${response.statusText}`);
+        console.warn(`[MailService] Failed to fetch from IPFS: ${response.statusText}`);
         return null;
       }
 
