@@ -23,11 +23,11 @@ export default function RootLayout({
   useViewportHeight();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
-
-    return () => clearTimeout(timer);
+    // Only show loading screen for a short moment to ensure hydration match or just remove it.
+    // Actually, we can remove the artificial delay entirely. 
+    // If we want a smooth transition, maybe 500ms or 0.
+    // Let's reduce it to 0 or remove the effect effectively by setting false immediately.
+    setLoading(false);
   }, []);
 
   return (

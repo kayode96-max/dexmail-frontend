@@ -632,13 +632,12 @@ class MailService {
       const messages: EmailMessage[] = [];
       let hasNewData = false;
 
-      for (const id of mailIds) {
+      const fetchPromises = mailIds.map(async (id) => {
         const idStr = id.toString();
 
         // Use cached message if available
         if (cache[idStr]) {
-          messages.push(cache[idStr]);
-          continue;
+          return cache[idStr];
         }
 
         try {
@@ -650,13 +649,6 @@ class MailService {
             functionName: 'getMail',
             args: [id]
           }) as any;
-
-          // Optimization: If sender is NOT the user, it is INBOX.
-          // If sender IS the user, it is SELF-SEND (INBOX) only if recipient is also user.
-          // But `getInbox` usually returns mails WHERE recipient == email.
-          // So if I send to myself, it appears here.
-          // If I send to SOMEONE ELSE, it should NOT appear here (and contract shouldn't return it).
-          // However, maybe we should filter out "Sent via DexMail" default messages if possible?
 
           let senderEmail = mail.sender;
           try {
@@ -694,14 +686,20 @@ class MailService {
             isSpam: mail.isSpam
           };
 
-          messages.push(newMessage);
           cache[idStr] = newMessage;
           hasNewData = true;
+          return newMessage;
 
         } catch (mailError) {
           console.error(`[MailService] Error fetching mail ID ${id}:`, mailError);
+          return null;
         }
-      }
+      });
+
+      const results = await Promise.all(fetchPromises);
+      results.forEach(msg => {
+        if (msg) messages.push(msg);
+      });
 
       if (hasNewData) {
         this.setCache(cacheKey, cache);
@@ -776,14 +774,13 @@ class MailService {
       const messages: EmailMessage[] = [];
       let hasNewData = false;
 
-      for (const log of logs) {
+      const fetchPromises = logs.map(async (log) => {
         try {
           const mailId = log.args.mailId as bigint;
           const idStr = mailId.toString();
 
           if (cache[idStr]) {
-            messages.push(cache[idStr]);
-            continue;
+            return cache[idStr];
           }
 
           const recipient = log.args.recipient as string;
@@ -816,14 +813,20 @@ class MailService {
             isSpam: mail.isSpam
           };
 
-          messages.push(newMessage);
           cache[idStr] = newMessage;
           hasNewData = true;
+          return newMessage;
 
         } catch (mailError) {
           console.error(`[MailService] Error processing sent mail:`, mailError);
+          return null;
         }
-      }
+      });
+
+      const results = await Promise.all(fetchPromises);
+      results.forEach(msg => {
+        if (msg) messages.push(msg);
+      });
 
       if (hasNewData) {
         this.setCache(cacheKey, cache);
