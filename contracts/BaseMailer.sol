@@ -108,24 +108,25 @@ contract EmailWallet is ReentrancyGuard {
  */
 contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     struct Mail {
-        string cid;
         address sender;
-        string recipientEmail;
-        string originalSender; // For bridged emails
-        uint256 timestamp;
+        uint64 timestamp;
         bool isExternal;
         bool hasCrypto;
         bool isSpam;
+        // The strings below are dynamic and take up their own slots + storage
+        string cid;
+        string recipientEmail;
+        string originalSender; // For bridged emails
     }
     
     struct CryptoTransfer {
         address token;
-        uint256 amount;
+        uint64 timestamp;
         bool isNft;
+        bool claimed;
+        uint256 amount;
         address sender;
         string recipientEmail;
-        uint256 timestamp;
-        bool claimed;
     }
     
     // Constants
@@ -192,6 +193,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     error NotNFTOwner();
     error InsufficientFee();
     error FeeTransferFailed();
+    error WalletAlreadyLinked();
     
     modifier onlyRelayer() {
         if (!authorizedRelayers[msg.sender]) revert Unauthorized();
@@ -215,6 +217,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     function registerEmail(string calldata email) external whenNotPaused {
         if (bytes(email).length > MAX_EMAIL_LENGTH) revert EmailTooLong();
         if (emailOwner[email] != address(0)) revert EmailTaken();
+        if (bytes(addressToEmail[msg.sender]).length > 0) revert WalletAlreadyLinked();
         
         emailOwner[email] = msg.sender;
         emailHashToOwner[keccak256(abi.encodePacked(email))] = msg.sender;
@@ -230,6 +233,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
     function registerEmailWithEmbeddedWallet(string calldata email) external whenNotPaused {
         if (bytes(email).length > MAX_EMAIL_LENGTH) revert EmailTooLong();
         if (emailOwner[email] != address(0)) revert EmailTaken();
+        if (bytes(addressToEmail[msg.sender]).length > 0) revert WalletAlreadyLinked();
         
         emailOwner[email] = msg.sender;
         emailHashToOwner[keccak256(abi.encodePacked(email))] = msg.sender;
@@ -254,27 +258,29 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         uint256 mailId = mails.length;
         
         mails.push(Mail({
-            cid: cid,
             sender: msg.sender,
-            recipientEmail: recipientEmail,
-            originalSender: originalSender,
-            timestamp: block.timestamp,
+            timestamp: uint64(block.timestamp),
             isExternal: isExternal,
             hasCrypto: hasCrypto,
-            isSpam: isSpam
+            isSpam: isSpam,
+            cid: cid,
+            recipientEmail: recipientEmail,
+            originalSender: originalSender
         }));
         
         inbox[recipientEmail].push(mailId);
         
         // Auto-whitelist logic: When sending mail to someone, automatically whitelist them
         // so they can reply without paying fees.
-        bytes32 senderHash = keccak256(abi.encodePacked(senderEmail));
-        bytes32 recipientHash = keccak256(abi.encodePacked(recipientEmail));
+        {
+            bytes32 senderHash = keccak256(abi.encodePacked(senderEmail));
+            bytes32 recipientHash = keccak256(abi.encodePacked(recipientEmail));
 
-        if (!whitelist[senderHash][recipientHash]) {
-            whitelist[senderHash][recipientHash] = true;
-            _whitelistedEmails[senderHash].push(recipientEmail);
-            emit WhitelistUpdated(senderHash, recipientHash, true);
+            if (!whitelist[senderHash][recipientHash]) {
+                whitelist[senderHash][recipientHash] = true;
+                _whitelistedEmails[senderHash].push(recipientEmail);
+                emit WhitelistUpdated(senderHash, recipientHash, true);
+            }
         }
         
         emit MailSent(mailId, msg.sender, recipientEmail, cid, originalSender, isSpam);
@@ -391,12 +397,12 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         // Record pending claim
         pendingTransfers[emailHash].push(CryptoTransfer({
             token: token,
-            amount: amount,
+            timestamp: uint64(block.timestamp),
             isNft: false,
+            claimed: isDirectTransfer,
+            amount: amount,
             sender: msg.sender,
-            recipientEmail: "",
-            timestamp: block.timestamp,
-            claimed: isDirectTransfer
+            recipientEmail: ""
         }));
         
         transferCount[emailHash]++;
@@ -436,12 +442,12 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         // Record pending claim
         pendingTransfers[emailHash].push(CryptoTransfer({
             token: nftContract,
-            amount: tokenId,
+            timestamp: uint64(block.timestamp),
             isNft: true,
+            claimed: isDirectTransfer,
+            amount: tokenId,
             sender: msg.sender,
-            recipientEmail: "",
-            timestamp: block.timestamp,
-            claimed: isDirectTransfer
+            recipientEmail: ""
         }));
         
         transferCount[emailHash]++;
@@ -462,17 +468,14 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         
         uint256 mailId = mails.length;
         mails.push(Mail({
-            cid: cid,
             sender: msg.sender,
-            recipientEmail: recipientEmail,
-            originalSender: "", // Internal mail, no original sender override
-            timestamp: block.timestamp,
+            timestamp: uint64(block.timestamp),
             isExternal: isExternal,
             hasCrypto: true,
-            isSpam: false // Crypto transfers usually imply trust/value, so not spam? Or should we check whitelist too?
-                          // For sendMailWithCrypto, typically you don't spam with money. Assuming false for now or perform checks.
-                          // User request didn't specify crypto mail behavior, but safe to assume value transfer bypasses spam?
-                          // Let's leave it as false (Not Spam) for now since they are PAYING gas + crypto.
+            isSpam: false, // See note above
+            cid: cid,
+            recipientEmail: recipientEmail,
+            originalSender: ""
         }));
         
         inbox[recipientEmail].push(mailId);
@@ -546,12 +549,12 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         // Record transfer
         pendingTransfers[emailHash].push(CryptoTransfer({
             token: token,
-            amount: amount,
+            timestamp: uint64(block.timestamp),
             isNft: isNft,
+            claimed: isDirectTransfer,
+            amount: amount,
             sender: msg.sender,
-            recipientEmail: recipientEmail,
-            timestamp: block.timestamp,
-            claimed: isDirectTransfer
+            recipientEmail: recipientEmail
         }));
         
         transferCount[emailHash]++;
@@ -622,6 +625,7 @@ contract BaseMailer is Ownable, Pausable, ReentrancyGuard {
         
         // Register email to address mapping if not already registered
         if (emailOwner[email] == address(0)) {
+            if (bytes(addressToEmail[claimantOwner]).length > 0) revert WalletAlreadyLinked();
             emailOwner[email] = claimantOwner;
             emailHashToOwner[emailHash] = claimantOwner;
             addressToEmail[claimantOwner] = email;
