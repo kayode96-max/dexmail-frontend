@@ -59,21 +59,21 @@ export function useWallet() {
       const challenge = await authService.getChallenge(email);
 
       // Create SIWE message
-      const domain = process.env.NEXT_PUBLIC_DOMAIN || window.location.host;
+      const domain = window.location.host;
+      const origin = window.location.origin;
       const message = new SiweMessage({
         domain,
         address,
         statement: 'Sign in to DexMail to access your decentralized inbox.',
-        uri: window.location.origin,
+        uri: origin,
         version: '1',
-        chainId: chain?.id || 1,
+        chainId: chain?.id || 8453,
         nonce: challenge.nonce,
       });
 
       const preparedMessage = message.prepareMessage();
       const signature = await signMessage(preparedMessage);
 
-      // Login with signature using the new method
       const authResponse = await authService.loginWithWallet(email, address, preparedMessage, signature);
 
       return authResponse;
@@ -93,14 +93,15 @@ export function useWallet() {
       const challenge = await authService.getChallenge(email);
 
       // Create SIWE message
-      const domain = process.env.NEXT_PUBLIC_DOMAIN || window.location.host;
+      const domain = window.location.host;
+      const origin = window.location.origin;
       const message = new SiweMessage({
         domain,
         address,
         statement: 'Sign in to DexMail to access your decentralized inbox.',
-        uri: window.location.origin,
+        uri: origin,
         version: '1',
-        chainId: chain?.id || 1,
+        chainId: chain?.id || 8453,
         nonce: challenge.nonce,
       });
 
