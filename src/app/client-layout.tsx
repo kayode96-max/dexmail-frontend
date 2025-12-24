@@ -35,8 +35,9 @@ export function ClientLayout({
                 <AuthProvider>
                     <ThemeProvider
                         attribute="class"
-                        defaultTheme="light"
-                        disableTransitionOnChange
+                        defaultTheme="system"
+                        enableSystem
+                        storageKey="dexmail-theme"
                     >
                         {loading ? <LoadingScreen /> : children}
                         <Toaster />

@@ -13,6 +13,7 @@ import {
 import { AppLogo } from '@/components/app-logo';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 type Step = 1 | 2 | 3;
 
@@ -48,12 +49,15 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex min-h-screen md:min-h-screen h-screen-mobile md:h-auto flex-col bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="flex min-h-screen md:min-h-screen h-screen-mobile md:h-auto flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       {/* Header with Logo */}
       <div className="flex items-center justify-between p-6">
         <AppLogo />
-        <div className="text-sm font-medium text-slate-600">
-          {step}/3
+        <div className="flex items-center gap-3">
+          <div className="text-sm font-medium text-slate-600 dark:text-slate-400">
+            {step}/3
+          </div>
+          <ThemeToggle />
         </div>
       </div>
 
@@ -78,10 +82,10 @@ export default function OnboardingPage() {
             <div
               key={i}
               className={`h-2 w-8 rounded-full transition-all duration-300 ${i === step
-                ? 'bg-slate-800'
+                ? 'bg-slate-800 dark:bg-slate-200'
                 : i < step
-                  ? 'bg-slate-400'
-                  : 'bg-slate-200'
+                  ? 'bg-slate-400 dark:bg-slate-500'
+                  : 'bg-slate-200 dark:bg-slate-700'
                 }`}
             />
           ))}
@@ -115,10 +119,10 @@ function OnboardingStep({ step, isLast, onNext, onSkip }: OnboardingStepProps) {
 
       {/* Content */}
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
           {step.title}
         </h1>
-        <p className="text-slate-600 leading-relaxed px-4">
+        <p className="text-slate-600 dark:text-slate-400 leading-relaxed px-4">
           {step.subtitle}
         </p>
       </div>
@@ -136,7 +140,7 @@ function OnboardingStep({ step, isLast, onNext, onSkip }: OnboardingStepProps) {
             <Button
               asChild
               variant="ghost"
-              className="w-full h-12 text-slate-900 font-semibold rounded-full border-2 border-slate-200 hover:bg-slate-50"
+              className="w-full h-12 text-slate-900 dark:text-slate-100 font-semibold rounded-full border-2 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
             >
               <Link href="/register">Sign up</Link>
             </Button>
@@ -152,7 +156,7 @@ function OnboardingStep({ step, isLast, onNext, onSkip }: OnboardingStepProps) {
             <Button
               onClick={onSkip}
               variant="ghost"
-              className="w-full h-12 text-slate-600 font-medium"
+              className="w-full h-12 text-slate-600 dark:text-slate-400 font-medium"
             >
               Skip
             </Button>

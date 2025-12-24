@@ -1,4 +1,5 @@
 import { AppLogo } from "@/components/app-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function AuthLayout({
   children,
@@ -6,10 +7,11 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden">
+    <div className="flex min-h-[100dvh] flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-hidden">
       {/* Header with Logo */}
       <div className="flex-none flex items-center justify-between p-6">
         <AppLogo />
+        <ThemeToggle />
       </div>
 
       {/* Main Content - Flex 1 to take remaining space */}
