@@ -72,7 +72,7 @@ export function WhitelistDisplay({ refreshTrigger }: { refreshTrigger?: number }
 
                 const result = await sendUserOperation({
                     evmSmartAccount: smartAccount,
-                    network: "base-mainnet" as any,
+                    network: "base",
                     calls: [{
                         to: BASEMAILER_ADDRESS as `0x${string}`,
                         data: callData,

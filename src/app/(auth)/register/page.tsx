@@ -294,7 +294,7 @@ export default function RegisterPage() {
 
         const result = await sendUserOperation({
           evmSmartAccount: smartAccount,
-          network: "base-mainnet" as any,
+          network: "base",
           calls: [{
             to: BASEMAILER_ADDRESS,
             data: data as `0x${string}`,

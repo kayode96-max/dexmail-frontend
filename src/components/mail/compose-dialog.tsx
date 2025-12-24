@@ -257,7 +257,7 @@ export function ComposeDialog({
 
         const result = await sendUserOperation({
           evmSmartAccount: smartAccount,
-          network: "base-mainnet" as any,
+          network: "base",
           calls: [{
             to: args.to as `0x${string}`,
             data: args.data as `0x${string}`,
