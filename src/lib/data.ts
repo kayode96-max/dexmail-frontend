@@ -348,4 +348,54 @@ Thank you for your hard work and dedication. We appreciate your contributions an
 Sincerely,
 The PayPal Team`
   },
+  {
+    id: 'user-avatar-17',
+    name: 'Coinbase',
+    email: 'no-reply@info.coinbase.com',
+    subject: '425168 is your login code',
+    text: 'Your login code 425168 This code will expire in 5 minutes...',
+    date: '2023-10-24T10:09:00.000Z',
+    read: false,
+    labels: [],
+    status: 'inbox',
+    body: `
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { font-family: Arial, sans-serif; color: #333; }
+  .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+  .code { font-size: 32px; font-weight: bold; margin: 20px 0; letter-spacing: 2px; }
+  .footer { color: #888; font-size: 12px; margin-top: 30px; }
+  .lock { display: flex; align-items: center; gap: 5px; color: #666; font-size: 14px; margin-top: 20px; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div style="display: flex; align-items: center; margin-bottom: 20px;">
+      <div style="width: 32px; height: 32px; background-color: #0052FF; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">C</div>
+      <div style="margin-left: 10px; font-weight: bold;">coinbase</div>
+    </div>
+    
+    <h2>Your login code</h2>
+    
+    <div class="code">425168</div>
+    
+    <p>This code will expire in 5 minutes. Do not share this code with anyone.</p>
+    
+    <div style="margin-top: 30px;">
+      <div>Platform: <b>Windows</b></div>
+      <div>Time: <b>Dec 24, 2025, 10:09 AM</b></div>
+    </div>
+    
+    <p style="margin-top: 30px; color: #666;">Didn't request this code? You can safely ignore this email.</p>
+    
+    <div class="lock">
+      <span>🔒</span> Secured by Coinbase
+    </div>
+  </div>
+</body>
+</html>
+    `
+  }
 ];

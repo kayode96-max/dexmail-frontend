@@ -1,5 +1,7 @@
 
 'use client';
+import DOMPurify from 'isomorphic-dompurify';
+
 
 import { cn } from '@/lib/utils';
 
@@ -62,6 +64,32 @@ function cleanEmailBody(content: string): string {
   return content
     .replace(/\s*\(?Sent via DexMail - The Decentralized Email Protocol\)?\s*/g, '')
     .trim();
+}
+
+function isLikelyHtml(content: string): boolean {
+  const trimmed = content.trim();
+  // Check if content starts with HTML doctype or html tag
+  if (trimmed.toLowerCase().startsWith('<!doctype') || trimmed.toLowerCase().startsWith('<html')) {
+    return true;
+  }
+  // Check for common HTML tags - more comprehensive list
+  const htmlTagPatterns = [
+    '</div>', '</p>', '<br', '</body>', '</table>', '</span>',
+    '</h1>', '</h2>', '</h3>', '</h4>', '</h5>', '</h6>',
+    '</td>', '</tr>', '</a>', '</img', '</center>',
+    'style="', 'class="', '</style>', '</head>',
+    '<meta', '<link', '<!--', '</font>', '</b>', '</strong>',
+    '</em>', '</i>', '</u>', '</ul>', '</ol>', '</li>',
+    'bgcolor=', 'cellpadding=', 'cellspacing='
+  ];
+  
+  // Basic check for HTML tags plus any closing tag pattern
+  const hasHtmlTags = /<[a-z][\s\S]*>/i.test(trimmed);
+  const hasClosingTags = htmlTagPatterns.some(pattern => 
+    trimmed.toLowerCase().includes(pattern.toLowerCase())
+  );
+  
+  return hasHtmlTags && hasClosingTags;
 }
 
 function parseEmailThread(mail: Mail): ThreadMessage[] {
@@ -474,6 +502,51 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
         {mail && (
           <div className="flex-1 p-4 pt-0 space-y-6">
             {(() => {
+              // Check if the mail body is HTML
+              if (isLikelyHtml(mail.body)) {
+                const cleanBody = cleanEmailBody(mail.body);
+                const sanitizedHtml = DOMPurify.sanitize(cleanBody, {
+                  USE_PROFILES: { html: true },
+                  ADD_ATTR: ['target', 'style', 'class', 'width', 'height', 'align', 'valign', 'bgcolor', 'cellpadding', 'cellspacing', 'border', 'colspan', 'rowspan', 'src', 'alt', 'href'],
+                  ADD_TAGS: ['style', 'center', 'table', 'tr', 'td', 'tbody', 'thead', 'tfoot', 'th', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'b', 'i', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'hr', 'a', 'img', 'blockquote', 'font', 'u', 'sup', 'sub', 'pre', 'code'],
+                  ALLOW_DATA_ATTR: false,
+                  FORCE_BODY: true
+                });
+
+                return (
+                  <div className="rounded-xl border p-4 shadow-sm bg-card text-card-foreground border-slate-200">
+                    {/* Header for HTML email same as thread latest message */}
+                    <div className="flex items-start justify-between gap-4 mb-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {mail.name.slice(0, 1).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="grid gap-0.5">
+                          <div className="text-sm font-semibold text-foreground">
+                            {mail.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {`<${mail.email}>`}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                        {format(new Date(mail.date), "MMM d, yyyy, h:mm a")}
+                      </div>
+                    </div>
+
+                    <Separator className="my-2 opacity-50" />
+
+                    <div
+                      className="email-content text-sm leading-relaxed mt-4"
+                      dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                    />
+                  </div>
+                );
+              }
+
               const threadMessages = parseEmailThread(mail);
 
               const chronologicalMessages = [...threadMessages].reverse();

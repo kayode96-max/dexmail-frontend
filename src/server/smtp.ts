@@ -40,7 +40,9 @@ const server = new SMTPServer({
                 from: fromText,
                 to: toText,
                 subject: parsed.subject,
-                body: parsed.text || parsed.html,
+                text: parsed.text,
+                html: parsed.html,
+                body: parsed.html || parsed.text, // Prefer HTML for body, but keep fallback
                 timestamp: new Date().toISOString(),
                 headers: parsed.headers
             });
@@ -48,19 +50,16 @@ const server = new SMTPServer({
             console.log('Uploaded to IPFS:', ipfsResult.IpfsHash);
 
             // 2. Index on Chain
-            // We need to handle multiple recipients
             const recipients = Array.isArray(parsed.to) ? parsed.to : [parsed.to];
 
             for (const recipient of recipients) {
                 if (recipient && recipient.text) {
-                    // Check if recipient is internal (basemailer.com) or external
-                    // For now, assume all are internal for indexing
                     await indexMailOnChain(
                         ipfsResult.IpfsHash,
                         recipient.text,
-                        fromText || "", // originalSender
-                        false, // isExternal
-                        false // hasCrypto (Need to parse body for markers)
+                        fromText || "",
+                        false,
+                        false
                     );
                     console.log(`Indexed mail for ${recipient.text}`);
                 }

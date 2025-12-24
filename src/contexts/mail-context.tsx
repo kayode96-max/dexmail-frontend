@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { mailService, EmailStatus, DraftEmail } from '@/lib/mail-service';
-import { Mail } from '@/lib/data';
+import { Mail, mails as mockMails } from '@/lib/data';
 import { useAccount } from 'wagmi';
 import { useAuth } from './auth-context';
 
@@ -62,6 +62,32 @@ export function MailProvider({ children }: { children: ReactNode }) {
 
             const cleanBody = (text: string | undefined | null) => (text || '').replace(/\s*\(?Sent via DexMail - The Decentralized Email Protocol\)?\s*/g, '').trim();
 
+            // Strip HTML tags and get plain text for preview
+            const getPreviewText = (html: string): string => {
+                // Remove DOCTYPE, html, head, style, and script tags with their content
+                let text = html
+                    .replace(/<!DOCTYPE[^>]*>/gi, '')
+                    .replace(/<head[\s\S]*?<\/head>/gi, '')
+                    .replace(/<style[\s\S]*?<\/style>/gi, '')
+                    .replace(/<script[\s\S]*?<\/script>/gi, '')
+                    // Replace common block elements with space/newline
+                    .replace(/<br\s*\/?>/gi, ' ')
+                    .replace(/<\/?(p|div|tr|li|h[1-6])[^>]*>/gi, ' ')
+                    // Remove all remaining HTML tags
+                    .replace(/<[^>]+>/g, '')
+                    // Decode common HTML entities
+                    .replace(/&nbsp;/gi, ' ')
+                    .replace(/&amp;/gi, '&')
+                    .replace(/&lt;/gi, '<')
+                    .replace(/&gt;/gi, '>')
+                    .replace(/&quot;/gi, '"')
+                    .replace(/&#39;/gi, "'")
+                    // Normalize whitespace
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                return text.substring(0, 100) + (text.length > 100 ? '...' : '');
+            };
+
             // Map inbox emails
             const inboxMails: Mail[] = fetchedInbox.map(m => {
                 const timestamp = parseInt(m.timestamp, 10) * 1000;
@@ -75,7 +101,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
                     name: m.from, // Display sender's email in the list
                     email: m.from, // Sender's email for reply-to
                     subject: m.subject,
-                    text: cleanedBody.substring(0, 100) + '...',
+                    text: getPreviewText(cleanedBody),
                     date: dateStr,
                     read: status.read,
 
@@ -107,7 +133,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
                     name: m.to[0] || 'Unknown', // Display recipient's email in the list
                     email: m.to[0] || '', // Recipient's email
                     subject: m.subject,
-                    text: cleanedBody.substring(0, 100) + '...',
+                    text: getPreviewText(cleanedBody),
                     date: dateStr,
                     read: true, // Sent emails are always "read"
                     labels: status.labels || [],
@@ -119,8 +145,8 @@ export function MailProvider({ children }: { children: ReactNode }) {
                 };
             });
 
-            // Combine inbox and sent emails
-            let allMails = [...inboxMails, ...sentMails];
+            // Combine inbox and sent emails, and inject mock data for verification
+            let allMails = [...inboxMails, ...sentMails, ...mockMails];
 
             // Fetch drafts
             const draftMails: Mail[] = fetchedDrafts.map(d => {
@@ -130,7 +156,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
                     name: '(Draft)',
                     email: d.to,
                     subject: d.subject || '(No Subject)',
-                    text: cleanedBody.substring(0, 100) + '...',
+                    text: getPreviewText(cleanedBody),
                     date: new Date(d.timestamp).toISOString(),
                     read: true,
                     labels: [],

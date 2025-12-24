@@ -96,6 +96,109 @@ body {
   }
 }
 
+/* Email Content Styling */
+.email-content {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--foreground);
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Preserve inline styles from HTML emails */
+.email-content * {
+  max-width: 100%;
+}
+
+.email-content a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.email-content p {
+  margin-bottom: 1em;
+}
+
+.email-content img {
+  max-width: 100%;
+  height: auto;
+  display: inline-block;
+}
+
+.email-content blockquote {
+  margin-left: 0;
+  padding-left: 1em;
+  border-left: 2px solid var(--border);
+  color: var(--muted-foreground);
+}
+
+.email-content ul,
+.email-content ol {
+  margin-left: 1.5em;
+  margin-bottom: 1em;
+}
+
+.email-content li {
+  margin-bottom: 0.5em;
+}
+
+.email-content h1,
+.email-content h2,
+.email-content h3,
+.email-content h4,
+.email-content h5,
+.email-content h6 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+/* Table support for HTML emails (common in marketing emails) */
+.email-content table {
+  max-width: 100%;
+  border-collapse: collapse;
+  margin: 0 auto;
+}
+
+.email-content td,
+.email-content th {
+  padding: 8px;
+  vertical-align: top;
+}
+
+/* Center element support */
+.email-content center {
+  display: block;
+  text-align: center;
+}
+
+/* Preserve background colors and styling from HTML emails */
+.email-content [style*="background"] {
+  border-radius: 8px;
+}
+
+/* Font styling */
+.email-content font {
+  font-family: inherit;
+}
+
+/* Responsive images in HTML emails */
+.email-content img[width] {
+  width: auto;
+  max-width: 100%;
+}
+
+/* Dark mode adjustments for HTML email content */
+.dark .email-content {
+  color-scheme: dark;
+}
+
+/* Ensure links are visible in dark mode */
+.dark .email-content a {
+  color: hsl(var(--primary));
+}
+
 /* Mobile viewport height fix for browser UI */
 /* JavaScript sets --vh dynamically via useViewportHeight hook */
 .h-screen-mobile {

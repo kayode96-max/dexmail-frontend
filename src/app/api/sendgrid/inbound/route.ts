@@ -55,12 +55,13 @@ export async function POST(req: NextRequest) {
 
         // 1. Upload to IPFS
         // We construct a JSON object similar to what we do in the frontend
+        // Prefer HTML for rich email content rendering, fallback to text
         const emailData = {
             from,
             to: [to], // SendGrid sends 'to' as a string, potentially multiple addresses
             subject,
-            body: text || html || 'No content', // Prefer text for simplicity, or store both? 
-            // For consistency with existing structure:
+            body: html || text || 'No content', // Prefer HTML for rich content rendering
+            // Store both versions for compatibility:
             htmlBody: html,
             textBody: text,
             timestamp: new Date().toISOString(),

@@ -49,6 +49,7 @@
     "embla-carousel-react": "^8.6.0",
     "ethers": "^6.15.0",
     "firebase": "^11.9.1",
+    "isomorphic-dompurify": "^2.34.0",
     "jsonwebtoken": "^9.0.2",
     "lru-cache": "^11.2.4",
     "lucide-react": "^0.475.0",

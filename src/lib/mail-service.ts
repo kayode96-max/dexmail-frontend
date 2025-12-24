@@ -598,7 +598,7 @@ class MailService {
 
       return {
         subject: data.subject || 'No Subject',
-        body: data.body || '',
+        body: data.htmlBody || data.html || data.body || data.textBody || data.text || '',
         from: data.from,
         inReplyTo: data.inReplyTo
       };
