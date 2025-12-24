@@ -419,7 +419,7 @@ export default function LoginPage() {
           src="/illustrations/login.svg"
           alt="Login to DexMail"
           fill
-          className="object-contain"
+          className="object-contain dark:brightness-90 dark:hue-rotate-180 dark:invert"
           priority
         />
       </div>
@@ -427,10 +427,10 @@ export default function LoginPage() {
       {/* Content */}
       <div className='text-center space-y-4 lg:space-y-8 w-full lg:w-2/5 px-4 md:px-8 lg:px-12 py-4 lg:py-0 flex flex-col justify-center overflow-y-auto lg:overflow-visible'>
         <div className="space-y-8 ">
-          <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
             Welcome Back
           </h1>
-          <p className="text-slate-600 leading-relaxed px-4">
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed px-4">
             Sign in to access your secure email and crypto features.
           </p>
         </div>
@@ -452,14 +452,14 @@ export default function LoginPage() {
                 setError('');
               }}
             />
-            <Label htmlFor="use-wallet" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="use-wallet" className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Sign in with external wallet instead of Coinbase
             </Label>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg">
+            <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg">
               <AlertCircle className="h-4 w-4" />
               <span className="text-sm">{error}</span>
             </div>
@@ -468,14 +468,14 @@ export default function LoginPage() {
           <div className="space-y-4">
             {!useWalletAuth ? (
               // Coinbase Embedded Wallet Login
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4 text-left">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4 text-left">
                 {!isSignedIn ? (
                   // Step 1: Email input and OTP sending
                   <>
                     {/* Step 1: Email input - hide when OTP is sent */}
                     {!isOtpSent && (
                       <div className="space-y-2">
-                        <Label htmlFor="embedded-email" className="text-slate-700 font-medium">
+                        <Label htmlFor="embedded-email" className="text-slate-700 dark:text-slate-300 font-medium">
                           Email for Coinbase sign-in
                         </Label>
                         <Input
@@ -513,7 +513,7 @@ export default function LoginPage() {
                     {/* Step 2: OTP verification */}
                     {isOtpSent && !isSignedIn && (
                       <div className="space-y-2 pt-2">
-                        <Label htmlFor="embedded-otp" className="text-slate-700 font-medium">
+                        <Label htmlFor="embedded-otp" className="text-slate-700 dark:text-slate-300 font-medium">
                           Enter 6-digit code
                         </Label>
                         <Input
@@ -549,7 +549,7 @@ export default function LoginPage() {
                   // Step 3: Signing in (auto-triggered after verification)
                   <div className="text-center space-y-3 py-4">
                     <Loader2 className="mx-auto h-10 w-10 text-brand-blue animate-spin" />
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                       Signing you in...
                     </p>
                   </div>
@@ -557,10 +557,10 @@ export default function LoginPage() {
                   // Step 4: Success message
                   <div className="text-center space-y-3">
                     <CheckCircle className="mx-auto h-10 w-10 text-brand-blue" />
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                       Signed in with Coinbase embedded wallet!
                     </p>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
                       Redirecting you to your inbox...
                     </p>
                   </div>
@@ -572,9 +572,9 @@ export default function LoginPage() {
                 {!isConnected ? (
                   // Wallet Connection
                   <div className="text-center space-y-3">
-                    <div className="p-6 bg-slate-50 rounded-2xl">
-                      <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                      <p className="text-sm font-medium text-slate-600 mb-4">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                      <Wallet className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500 mb-4" />
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-4">
                         Connect your wallet to continue
                       </p>
                       <ConnectButton.Custom>
@@ -621,12 +621,12 @@ export default function LoginPage() {
                   // Signature Authentication
                   <div className="space-y-4">
                     <div className="text-center space-y-3">
-                      <div className="p-6 bg-brand-blue/10 rounded-2xl">
+                      <div className="p-6 bg-brand-blue/10 dark:bg-brand-blue/20 rounded-2xl">
                         <CheckCircle className="mx-auto h-8 w-8 text-brand-blue mb-3" />
-                        <p className="text-sm font-medium text-slate-900 mb-2">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
                           Wallet Connected
                         </p>
-                        <p className="text-xs text-slate-600 mb-4">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
                           Address: {address?.slice(0, 6)}...{address?.slice(-4)}
                         </p>
                       </div>
@@ -634,7 +634,7 @@ export default function LoginPage() {
 
                     {/* Email field for external wallet */}
                     <div className="text-left space-y-2">
-                      <Label htmlFor="wallet-email" className="text-slate-700 font-medium">
+                      <Label htmlFor="wallet-email" className="text-slate-700 dark:text-slate-300 font-medium">
                         DexMail Username
                       </Label>
                       <div className="relative">
@@ -691,16 +691,16 @@ export default function LoginPage() {
                 ) : (
                   // Authentication Complete
                   <div className="text-center space-y-4">
-                    <div className="p-6 bg-brand-blue/10 rounded-2xl">
+                    <div className="p-6 bg-brand-blue/10 dark:bg-brand-blue/20 rounded-2xl">
                       <CheckCircle className="mx-auto h-12 w-12 text-brand-blue mb-4" />
-                      <p className="text-sm font-medium text-slate-900 mb-2">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
                         Signed In Successfully!
                       </p>
-                      <p className="text-xs text-slate-600 mb-3">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
                         Authenticated with wallet signature
                       </p>
-                      <div className="bg-slate-100 p-2 rounded-lg space-y-1">
-                        <p className="text-xs text-slate-500">
+                      <div className="bg-slate-100 dark:bg-slate-800/50 p-2 rounded-lg space-y-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           Email: <span className="font-mono">{email}</span>
                         </p>
                         <p className="text-xs text-slate-500">
@@ -716,9 +716,9 @@ export default function LoginPage() {
 
           {/* Sign up link */}
           {!authComplete && !embeddedComplete && (
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-slate-600 dark:text-slate-400">
               Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-brand-blue hover:text-brand-blue-hover font-medium">
+              <Link href="/register" className="text-brand-blue hover:text-brand-blue-hover dark:text-blue-400 font-medium">
                 Sign up
               </Link>
             </div>

@@ -112,7 +112,7 @@ function OnboardingStep({ step, isLast, onNext, onSkip }: OnboardingStepProps) {
           alt={step.title}
           width={320}
           height={320}
-          className="w-full h-full object-contain mix-blend-multiply"
+          className="w-full h-full object-contain dark:brightness-90 dark:contrast-90"
           priority
         />
       </div>

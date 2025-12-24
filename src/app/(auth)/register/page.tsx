@@ -341,7 +341,7 @@ export default function RegisterPage() {
           src="/illustrations/register.svg"
           alt="Create DexMail Account"
           fill
-          className="object-contain"
+          className="object-contain dark:brightness-90 dark:hue-rotate-180 dark:invert"
           priority
         />
       </div>
@@ -350,10 +350,10 @@ export default function RegisterPage() {
       <div className='text-center space-y-4 lg:space-y-8 w-full lg:w-2/5 px-4 md:px-8 lg:px-12 py-4 lg:py-0 flex flex-col justify-center overflow-y-auto lg:overflow-visible'>
         {/* Content */}
         <div className="space-y-8">
-          <h1 className="text-2xl font-bold text-slate-900 leading-tight">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
             Create Your Account
           </h1>
-          <p className="text-slate-600 leading-relaxed px-4">
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed px-4">
             Join DexMail to send emails with crypto transfers and manage your digital assets.
           </p>
         </div>
@@ -375,14 +375,14 @@ export default function RegisterPage() {
                 setError('');
               }}
             />
-            <Label htmlFor="use-wallet" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="use-wallet" className="text-sm font-medium text-slate-700 dark:text-slate-300">
               Use external wallet instead of Coinbase embedded wallet
             </Label>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg">
+            <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg">
               <AlertCircle className="h-4 w-4" />
               <span className="text-sm">{error}</span>
             </div>
@@ -390,13 +390,13 @@ export default function RegisterPage() {
 
           <div className="space-y-4">
             {!useWalletAuth ? (
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4 text-left">
+              <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4 text-left">
                 {!isSignedIn ? (
                   <>
                     {/* Step 1: Email input - hide when OTP is sent */}
                     {!isOtpSent && (
                       <div className="space-y-2">
-                        <Label htmlFor="embedded-email" className="text-slate-700 font-medium">
+                        <Label htmlFor="embedded-email" className="text-slate-700 dark:text-slate-300 font-medium">
                           Email for Coinbase sign-in
                         </Label>
                         <Input
@@ -434,7 +434,7 @@ export default function RegisterPage() {
                     {/* Step 2: OTP verification (only show if OTP was sent but user not yet signed in) */}
                     {isOtpSent && !isSignedIn && (
                       <div className="space-y-2 pt-2">
-                        <Label htmlFor="embedded-otp" className="text-slate-700 font-medium">
+                        <Label htmlFor="embedded-otp" className="text-slate-700 dark:text-slate-300 font-medium">
                           Enter 6-digit code
                         </Label>
                         <Input
@@ -485,7 +485,7 @@ export default function RegisterPage() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="embedded-username" className="text-slate-700 font-medium">
+                        <Label htmlFor="embedded-username" className="text-slate-700 dark:text-slate-300 font-medium">
                           Pick a DexMail username
                         </Label>
                         <div className="relative">
@@ -512,7 +512,7 @@ export default function RegisterPage() {
                             {process.env.NEXT_PUBLIC_DOMAIN ? `@${process.env.NEXT_PUBLIC_DOMAIN}` : '@dexmail.app'}
                           </div>
                         </div>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           This is your unique on-chain identity.
                         </p>
                       </div>
@@ -531,9 +531,9 @@ export default function RegisterPage() {
                         )}
                       </Button>
 
-                      <div className="text-sm text-slate-600">
+                      <div className="text-sm text-slate-600 dark:text-slate-400">
                         Already have an account?{" "}
-                        <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover font-medium">
+                        <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover dark:text-blue-400 font-medium">
                           Sign in
                         </Link>
                       </div>
@@ -543,10 +543,10 @@ export default function RegisterPage() {
                   // Step 4: Success message
                   <div className="text-center space-y-3">
                     <CheckCircle className="mx-auto h-10 w-10 text-brand-blue" />
-                    <p className="text-sm font-medium text-slate-900">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                       Account created with Coinbase embedded wallet!
                     </p>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-slate-600 dark:text-slate-400">
                       Redirecting you to your inbox...
                     </p>
                   </div>
@@ -558,9 +558,9 @@ export default function RegisterPage() {
                 {!isConnected ? (
                   // Wallet Connection
                   <div className="text-center space-y-3">
-                    <div className="p-6 bg-slate-50 rounded-2xl">
-                      <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                      <p className="text-sm font-medium text-slate-600 mb-4">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
+                      <Wallet className="mx-auto h-12 w-12 text-slate-400 dark:text-slate-500 mb-4" />
+                      <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-4">
                         Connect your wallet to continue
                       </p>
                       <ConnectButton.Custom>
@@ -607,27 +607,27 @@ export default function RegisterPage() {
                   // Basename fetching and email generation
                   <div className="space-y-4">
                     <div className="text-center space-y-3">
-                      <div className="p-6 bg-brand-blue/10 rounded-2xl">
+                      <div className="p-6 bg-brand-blue/10 dark:bg-brand-blue/20 rounded-2xl">
                         <CheckCircle className="mx-auto h-8 w-8 text-brand-blue mb-3" />
-                        <p className="text-sm font-medium text-slate-900 mb-2">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
                           Wallet Connected
                         </p>
-                        <p className="text-xs text-slate-600 mb-4">
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
                           Address: {address?.slice(0, 6)}...{address?.slice(-4)}
                         </p>
 
                         {isFetchingBasename ? (
                           <div className="space-y-2">
                             <Loader2 className="mx-auto h-6 w-6 text-brand-blue animate-spin" />
-                            <p className="text-xs text-slate-600">Fetching basename...</p>
+                            <p className="text-xs text-slate-600 dark:text-slate-400">Fetching basename...</p>
                           </div>
                         ) : basename ? (
                           <div className="space-y-3">
-                            <div className="bg-slate-100 p-3 rounded-lg">
-                              <p className="text-xs text-slate-500 mb-1">Found basename:</p>
-                              <p className="text-sm font-mono font-semibold text-slate-900">{basename}</p>
-                              <p className="text-xs text-slate-500 mt-1">Generated email:</p>
-                              <p className="text-sm font-mono font-semibold text-brand-blue">{generatedEmail}</p>
+                            <div className="bg-slate-100 dark:bg-slate-800/50 p-3 rounded-lg">
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Found basename:</p>
+                              <p className="text-sm font-mono font-semibold text-slate-900 dark:text-slate-100">{basename}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Generated email:</p>
+                              <p className="text-sm font-mono font-semibold text-brand-blue dark:text-blue-400">{generatedEmail}</p>
                             </div>
                           </div>
                         ) : (
@@ -638,7 +638,7 @@ export default function RegisterPage() {
 
                     {/* Email field (editable) */}
                     <div className="text-left space-y-2">
-                      <Label htmlFor="wallet-email" className="text-slate-700 font-medium">
+                      <Label htmlFor="wallet-email" className="text-slate-700 dark:text-slate-300 font-medium">
                         Username {generatedEmail && '(auto-generated, editable)'}
                       </Label>
                       <div className="relative">
@@ -693,16 +693,16 @@ export default function RegisterPage() {
                 ) : (
                   // Registration Complete
                   <div className="text-center space-y-4">
-                    <div className="p-6 bg-brand-blue/10 rounded-2xl">
+                    <div className="p-6 bg-brand-blue/10 dark:bg-brand-blue/20 rounded-2xl">
                       <CheckCircle className="mx-auto h-12 w-12 text-brand-blue mb-4" />
-                      <p className="text-sm font-medium text-slate-900 mb-2">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2">
                         Account Created Successfully!
                       </p>
-                      <p className="text-xs text-slate-600 mb-3">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 mb-3">
                         Registered with wallet signature
                       </p>
-                      <div className="bg-slate-100 p-2 rounded-lg space-y-1">
-                        <p className="text-xs text-slate-500">
+                      <div className="bg-slate-100 dark:bg-slate-800/50 p-2 rounded-lg space-y-1">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
                           Email: <span className="font-mono">{email}@{process.env.NEXT_PUBLIC_DOMAIN || 'dexmail.app'}</span>
                         </p>
                         <p className="text-xs text-slate-500">
@@ -723,9 +723,9 @@ export default function RegisterPage() {
 
           {/* Sign in link */}
           {useWalletAuth && !authComplete && (
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-slate-600 dark:text-slate-400">
               Already have an account?{" "}
-              <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover font-medium">
+              <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover dark:text-blue-400 font-medium">
                 Sign in with wallet
               </Link>
             </div>
@@ -733,9 +733,9 @@ export default function RegisterPage() {
         </div>
         {/* Sign up link */}
         {!authComplete && !embeddedComplete && (
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-slate-600 dark:text-slate-400">
             Already have an account?{" "}
-            <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover font-medium">
+            <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover dark:text-blue-400 font-medium">
               Sign in
             </Link>
           </div>
