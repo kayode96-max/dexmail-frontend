@@ -677,20 +677,20 @@ export default function LoginPage() {
               )}
             </div>
           </form>
-          <div className="relative hidden bg-muted md:flex md:items-center md:justify-center md:min-h-[600px]">
-            <div className="flex flex-col items-center justify-center gap-4 p-8">
-              <Image
-                src="/logo.png"
-                alt="DexMail Logo"
-                width={120}
-                height={120}
-                className="rounded-2xl"
-                priority
-              />
-              <div className="text-center space-y-2">
-                <h2 className="text-2xl font-bold">DexMail</h2>
-                <p className="text-sm text-muted-foreground max-w-xs">Secure decentralized email with crypto integration</p>
-              </div>
+          <div className="relative hidden flex-col items-center justify-center bg-muted p-8 md:flex">
+            <Image
+              src="/logo.png"
+              alt="DexMail Logo"
+              width={120}
+              height={120}
+              className="rounded-2xl mb-4"
+              priority
+            />
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-semibold tracking-tight">Welcome to DexMail</h2>
+              <p className="text-sm text-muted-foreground">
+                Secure, decentralized email powered by blockchain technology.
+              </p>
             </div>
           </div>
         </CardContent>
