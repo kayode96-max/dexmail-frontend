@@ -1,8 +1,7 @@
 
 import { MailComponent } from '@/components/mail/mail';
-import { mails } from '@/lib/data';
 
 export default function ArchivePage() {
-  return <MailComponent mails={mails} category="archive" />;
+  return <MailComponent mails={[]} category="archive" />;
 }
 
