@@ -32,6 +32,7 @@ import { Input } from './ui/input';
 import { cn } from '@/lib/utils';
 import { useMailCounts } from '@/hooks/use-mail-counts';
 import { useMailLabels } from '@/hooks/use-mail-labels';
+import { ThemeToggle } from './theme-toggle';
 
 export function SidebarNav() {
   const pathname = usePathname();
@@ -205,8 +206,13 @@ export function SidebarNav() {
           ))}
         </SidebarMenu>
         <SidebarSeparator />
-        <div className="p-2">
-          <UserNav />
+        <div className="p-2 flex items-center gap-2">
+          <div className="flex-1">
+            <UserNav />
+          </div>
+          <div className="group-data-[collapsible=icon]/sidebar:hidden">
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </div>

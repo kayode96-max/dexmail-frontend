@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent } from "@/components/ui/card";
 import { Wallet, Loader2, CheckCircle, AlertCircle } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { useAuth } from "@/contexts/auth-context";
@@ -410,171 +411,149 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-full gap-4 lg:gap-0">
-
-
-      {/* Illustration - Top on mobile, Left on desktop */}
-      <div className="w-full lg:w-3/5 relative flex-shrink-0 h-96 lg:h-[600px]">
-        <Image
-          src="/illustrations/login.svg"
-          alt="Login to DexMail"
-          fill
-          className="object-contain"
-          priority
-        />
-      </div>
-
-      {/* Content */}
-      <div className='text-center space-y-4 lg:space-y-8 w-full lg:w-2/5 px-4 md:px-8 lg:px-12 py-4 lg:py-0 flex flex-col justify-center overflow-y-auto lg:overflow-visible'>
-        <div className="space-y-8 ">
-          <h1 className="text-2xl font-bold text-slate-900 leading-tight">
-            Welcome Back
-          </h1>
-          <p className="text-slate-600 leading-relaxed px-4">
-            Sign in to access your secure email and crypto features.
-          </p>
-        </div>
-
-        {/* Login Form */}
-        <div className="space-y-14 max-w-[560px] mx-auto w-full">
-          {/* Wallet Connection Option */}
-          <div className="flex items-center space-x-3 justify-start px-1">
-            <Checkbox
-              id="use-wallet"
-              checked={useWalletAuth}
-              onCheckedChange={(checked) => {
-                setUseWalletAuth(checked as boolean);
-                if (!checked) {
-                  resetWalletConnection();
-                } else {
-                  resetEmbeddedFlow();
-                }
-                setError('');
-              }}
-            />
-            <Label htmlFor="use-wallet" className="text-sm font-medium text-slate-700">
-              Sign in with external wallet instead of Coinbase
-            </Label>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded-lg">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">{error}</span>
-            </div>
-          )}
-
-          <div className="space-y-4">
-            {!useWalletAuth ? (
-              // Coinbase Embedded Wallet Login
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4 text-left">
-                {!isSignedIn ? (
-                  // Step 1: Email input and OTP sending
-                  <>
-                    {/* Step 1: Email input - hide when OTP is sent */}
-                    {!isOtpSent && (
-                      <div className="space-y-2">
-                        <Label htmlFor="embedded-email" className="text-slate-700 font-medium">
-                          Email for Coinbase sign-in
-                        </Label>
-                        <Input
-                          id="embedded-email"
-                          type="email"
-                          placeholder="you@example.com"
-                          className="h-12 bg-white border-slate-200 rounded-xl focus:border-slate-400 focus:ring-slate-400 text-black placeholder:text-slate-500"
-                          style={{ colorScheme: 'light' }}
-                          value={embeddedEmail}
-                          onChange={(e) => {
-                            setEmbeddedEmail(e.target.value);
-                            if (error === 'Please enter your email to receive a code') {
-                              setError('');
-                            }
-                          }}
-                          required
-                        />
-                        <Button
-                          onClick={handleSendOtp}
-                          disabled={isSendingOtp || !embeddedEmail.trim()}
-                          className="w-full h-11 bg-brand-blue hover:bg-brand-blue-hover text-white font-semibold rounded-full"
-                        >
-                          {isSendingOtp ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              Sending code...
-                            </>
-                          ) : (
-                            'Send OTP'
-                          )}
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Step 2: OTP verification */}
-                    {isOtpSent && !isSignedIn && (
-                      <div className="space-y-2 pt-2">
-                        <Label htmlFor="embedded-otp" className="text-slate-700 font-medium">
-                          Enter 6-digit code
-                        </Label>
-                        <Input
-                          id="embedded-otp"
-                          type="text"
-                          inputMode="numeric"
-                          maxLength={6}
-                          placeholder="123456"
-                          className="h-12 bg-white border-slate-200 rounded-xl focus:border-slate-400 focus:ring-slate-400 text-black placeholder:text-slate-500"
-                          style={{ colorScheme: 'light' }}
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value)}
-                          required
-                        />
-                        <Button
-                          onClick={handleVerifyOtp}
-                          disabled={isVerifyingOtp || isFinishingEmbedded}
-                          className="w-full h-11 bg-brand-blue hover:bg-brand-blue-hover text-white font-semibold rounded-full"
-                        >
-                          {isVerifyingOtp || isFinishingEmbedded ? (
-                            <>
-                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              {isVerifyingOtp ? 'Verifying...' : 'Signing in...'}
-                            </>
-                          ) : (
-                            'Verify & Sign In'
-                          )}
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                ) : !embeddedComplete ? (
-                  // Step 3: Signing in (auto-triggered after verification)
-                  <div className="text-center space-y-3 py-4">
-                    <Loader2 className="mx-auto h-10 w-10 text-brand-blue animate-spin" />
-                    <p className="text-sm font-medium text-slate-900">
-                      Signing you in...
-                    </p>
-                  </div>
-                ) : (
-                  // Step 4: Success message
-                  <div className="text-center space-y-3">
-                    <CheckCircle className="mx-auto h-10 w-10 text-brand-blue" />
-                    <p className="text-sm font-medium text-slate-900">
-                      Signed in with Coinbase embedded wallet!
-                    </p>
-                    <p className="text-xs text-slate-600">
-                      Redirecting you to your inbox...
-                    </p>
-                  </div>
-                )}
+    <div className="flex flex-col gap-6">
+      <Card className="overflow-hidden">
+        <CardContent className="grid p-0 md:grid-cols-2">
+          <form className="p-6 md:p-8" onSubmit={(e) => e.preventDefault()}>
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col items-center text-center">
+                <h1 className="text-2xl font-bold">Welcome Back</h1>
+                <p className="text-balance text-muted-foreground">
+                  Sign in to access your secure email
+                </p>
               </div>
-            ) : (
-              // Wallet Signature Authentication
-              <div className="space-y-4">
-                {!isConnected ? (
-                  // Wallet Connection
-                  <div className="text-center space-y-3">
-                    <div className="p-6 bg-slate-50 rounded-2xl">
-                      <Wallet className="mx-auto h-12 w-12 text-slate-400 mb-4" />
-                      <p className="text-sm font-medium text-slate-600 mb-4">
+
+              {/* Error Message */}
+              {error && (
+                <div className="flex items-center gap-2 text-destructive bg-destructive/10 p-3 rounded-lg text-sm">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {/* Wallet Connection Option */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="use-wallet"
+                  checked={useWalletAuth}
+                  onCheckedChange={(checked) => {
+                    setUseWalletAuth(checked as boolean);
+                    if (!checked) {
+                      resetWalletConnection();
+                    } else {
+                      resetEmbeddedFlow();
+                    }
+                    setError('');
+                  }}
+                />
+                <Label htmlFor="use-wallet" className="text-sm font-medium cursor-pointer">
+                  Use external wallet
+                </Label>
+              </div>
+
+              {!useWalletAuth ? (
+                // Coinbase Embedded Wallet Login
+                <>
+                  {!isSignedIn ? (
+                    <>
+                      {/* Step 1: Email input - hide when OTP is sent */}
+                      {!isOtpSent && (
+                        <>
+                          <div className="grid gap-2">
+                            <Label htmlFor="embedded-email">Email</Label>
+                            <Input
+                              id="embedded-email"
+                              type="email"
+                              placeholder="m@example.com"
+                              value={embeddedEmail}
+                              onChange={(e) => {
+                                setEmbeddedEmail(e.target.value);
+                                if (error === 'Please enter your email to receive a code') {
+                                  setError('');
+                                }
+                              }}
+                              required
+                            />
+                          </div>
+                          <Button
+                            onClick={handleSendOtp}
+                            disabled={isSendingOtp || !embeddedEmail.trim()}
+                            className="w-full"
+                          >
+                            {isSendingOtp ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Sending code...
+                              </>
+                            ) : (
+                              'Send verification code'
+                            )}
+                          </Button>
+                        </>
+                      )}
+
+                      {/* Step 2: OTP verification */}
+                      {isOtpSent && !isSignedIn && (
+                        <>
+                          <div className="grid gap-2">
+                            <Label htmlFor="embedded-otp">Verification Code</Label>
+                            <Input
+                              id="embedded-otp"
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={6}
+                              placeholder="123456"
+                              value={otpCode}
+                              onChange={(e) => setOtpCode(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <Button
+                            onClick={handleVerifyOtp}
+                            disabled={isVerifyingOtp || isFinishingEmbedded}
+                            className="w-full"
+                          >
+                            {isVerifyingOtp || isFinishingEmbedded ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                {isVerifyingOtp ? 'Verifying...' : 'Signing in...'}
+                              </>
+                            ) : (
+                              'Verify & Sign In'
+                            )}
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  ) : !embeddedComplete ? (
+                    // Step 3: Signing in
+                    <div className="text-center space-y-3 py-4">
+                      <Loader2 className="mx-auto h-10 w-10 text-primary animate-spin" />
+                      <p className="text-sm font-medium">
+                        Signing you in...
+                      </p>
+                    </div>
+                  ) : (
+                    // Step 4: Success message
+                    <div className="text-center space-y-3 py-4">
+                      <CheckCircle className="mx-auto h-10 w-10 text-primary" />
+                      <p className="text-sm font-medium">
+                        Signed in successfully!
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Redirecting you to your inbox...
+                      </p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                // Wallet Signature Authentication
+                <>
+                  {!isConnected ? (
+                    // Wallet Connection
+                    <div className="text-center space-y-4">
+                      <Wallet className="mx-auto h-12 w-12 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
                         Connect your wallet to continue
                       </p>
                       <ConnectButton.Custom>
@@ -582,7 +561,6 @@ export default function LoginPage() {
                           account,
                           chain,
                           openAccountModal,
-                          openChainModal,
                           openConnectModal,
                           authenticationStatus,
                           mounted,
@@ -599,7 +577,7 @@ export default function LoginPage() {
                             <Button
                               onClick={connected ? openAccountModal : openConnectModal}
                               disabled={!ready}
-                              className="w-full h-12 bg-brand-blue hover:bg-brand-blue-hover text-white font-semibold rounded-full"
+                              className="w-full"
                             >
                               {!ready ? (
                                 <>
@@ -616,115 +594,111 @@ export default function LoginPage() {
                         }}
                       </ConnectButton.Custom>
                     </div>
-                  </div>
-                ) : !authComplete ? (
-                  // Signature Authentication
-                  <div className="space-y-4">
-                    <div className="text-center space-y-3">
-                      <div className="p-6 bg-brand-blue/10 rounded-2xl">
-                        <CheckCircle className="mx-auto h-8 w-8 text-brand-blue mb-3" />
-                        <p className="text-sm font-medium text-slate-900 mb-2">
-                          Wallet Connected
-                        </p>
-                        <p className="text-xs text-slate-600 mb-4">
-                          Address: {address?.slice(0, 6)}...{address?.slice(-4)}
+                  ) : !authComplete ? (
+                    // Signature Authentication
+                    <>
+                      <div className="text-center space-y-2 p-4 bg-primary/10 rounded-lg">
+                        <CheckCircle className="mx-auto h-8 w-8 text-primary" />
+                        <p className="text-sm font-medium">Wallet Connected</p>
+                        <p className="text-xs text-muted-foreground">
+                          {address?.slice(0, 6)}...{address?.slice(-4)}
                         </p>
                       </div>
-                    </div>
 
-                    {/* Email field for external wallet */}
-                    <div className="text-left space-y-2">
-                      <Label htmlFor="wallet-email" className="text-slate-700 font-medium">
-                        DexMail Username
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="wallet-email"
-                          type="text"
-                          placeholder="username"
-                          className="h-12 bg-white border-slate-200 rounded-xl focus:border-slate-400 focus:ring-slate-400 text-black placeholder:text-slate-500 pr-32"
-                          style={{ colorScheme: 'light' }}
-                          value={email}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val.includes('@') || val.includes('dexmail.app')) {
-                              setError("Please enter only your username, do not include '@dexmail.app'");
-                              setEmail(val.replace(/[@]/g, '').replace('dexmail.app', ''));
-                            } else {
-                              setError('');
-                              setEmail(val);
-                            }
-                          }}
-                          required
-                        />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 font-medium bg-transparent">
-                          @dexmail.app
+                      <div className="grid gap-2">
+                        <Label htmlFor="wallet-email">DexMail Username</Label>
+                        <div className="relative">
+                          <Input
+                            id="wallet-email"
+                            type="text"
+                            placeholder="username"
+                            className="pr-32"
+                            value={email}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val.includes('@') || val.includes('dexmail.app')) {
+                                setError("Enter only your username");
+                                setEmail(val.replace(/[@]/g, '').replace('dexmail.app', ''));
+                              } else {
+                                setError('');
+                                setEmail(val);
+                              }
+                            }}
+                            required
+                          />
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground text-sm">
+                            @dexmail.app
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <Button
-                      onClick={handleWalletAuth}
-                      disabled={isSigning || isAuthenticating || !email.trim()}
-                      className="w-full h-12 bg-brand-blue hover:bg-brand-blue-hover text-white font-semibold rounded-full"
-                    >
-                      {isSigning ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Signing...
-                        </>
-                      ) : isAuthenticating ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Signing In...
-                        </>
-                      ) : (
-                        'Sign to Login'
-                      )}
-                    </Button>
-                    {!email.trim() && (
-                      <p className="text-xs text-amber-600 mt-2">
-                        Please enter your username
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  // Authentication Complete
-                  <div className="text-center space-y-4">
-                    <div className="p-6 bg-brand-blue/10 rounded-2xl">
-                      <CheckCircle className="mx-auto h-12 w-12 text-brand-blue mb-4" />
-                      <p className="text-sm font-medium text-slate-900 mb-2">
-                        Signed In Successfully!
-                      </p>
-                      <p className="text-xs text-slate-600 mb-3">
-                        Authenticated with wallet signature
-                      </p>
-                      <div className="bg-slate-100 p-2 rounded-lg space-y-1">
-                        <p className="text-xs text-slate-500">
-                          Email: <span className="font-mono">{email}</span>
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          Wallet: <span className="font-mono">{address?.slice(0, 6)}...{address?.slice(-4)}</span>
+                      <Button
+                        onClick={handleWalletAuth}
+                        disabled={isSigning || isAuthenticating || !email.trim()}
+                        className="w-full"
+                      >
+                        {isSigning ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Signing...
+                          </>
+                        ) : isAuthenticating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Authenticating...
+                          </>
+                        ) : (
+                          'Sign to Login'
+                        )}
+                      </Button>
+                    </>
+                  ) : (
+                    // Authentication Complete
+                    <div className="text-center space-y-4 py-4">
+                      <div className="p-4 bg-primary/10 rounded-lg space-y-2">
+                        <CheckCircle className="mx-auto h-12 w-12 text-primary" />
+                        <p className="text-sm font-medium">Signed In Successfully!</p>
+                        <p className="text-xs text-muted-foreground">
+                          Authenticated with wallet signature
                         </p>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                  )}
+                </>
+              )}
 
-          {/* Sign up link */}
-          {!authComplete && !embeddedComplete && (
-            <div className="text-sm text-slate-600">
-              Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-brand-blue hover:text-brand-blue-hover font-medium">
-                Sign up
-              </Link>
+              {!authComplete && !embeddedComplete && (
+                <div className="text-center text-sm">
+                  Don&apos;t have an account?{" "}
+                  <Link href="/register" className="underline underline-offset-4 hover:text-primary">
+                    Sign up
+                  </Link>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </form>
+          <div className="relative hidden flex-col items-center justify-center bg-muted p-8 md:flex">
+            <Image
+              src="/logo.png"
+              alt="DexMail Logo"
+              width={120}
+              height={120}
+              className="rounded-2xl mb-4"
+              priority
+            />
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-semibold tracking-tight">Welcome to DexMail</h2>
+              <p className="text-sm text-muted-foreground">
+                Secure, decentralized email powered by blockchain technology.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
+        By clicking continue, you agree to our <Link href="#">Terms of Service</Link>{" "}
+        and <Link href="#">Privacy Policy</Link>.
       </div>
-    </div >
+    </div>
   );
 }

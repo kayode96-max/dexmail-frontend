@@ -333,45 +333,61 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="overflow-hidden">
-        <CardContent className="grid p-0 md:grid-cols-2">
-          <form className="p-6 md:p-8" onSubmit={(e) => e.preventDefault()}>
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col items-center text-center">
-                <h1 className="text-2xl font-bold">Create Your Account</h1>
-                <p className="text-balance text-muted-foreground">
-                  Join DexMail for secure email and crypto
-                </p>
-              </div>
+    <div className="flex flex-col lg:flex-row min-h-full gap-4 lg:gap-0">
 
-              {/* Error Message */}
-              {error && (
-                <div className="flex items-center gap-2 text-destructive bg-destructive/10 p-3 rounded-lg text-sm">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
 
-              {/* Wallet Registration Option */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="use-wallet"
-                  checked={useWalletAuth}
-                  onCheckedChange={(checked) => {
-                    setUseWalletAuth(checked as boolean);
-                    if (!checked) {
-                      resetWalletConnection();
-                    } else {
-                      resetEmbeddedFlow();
-                    }
-                    setError('');
-                  }}
-                />
-                <Label htmlFor="use-wallet" className="text-sm font-medium cursor-pointer">
-                  Use external wallet
-                </Label>
-              </div>
+      {/* Illustration - Top on mobile, Left on desktop */}
+      <div className="w-full lg:w-3/5 relative flex-shrink-0 h-96 lg:h-[600px]">
+        <Image
+          src="/illustrations/register.svg"
+          alt="Create DexMail Account"
+          fill
+          className="object-contain dark:brightness-90 dark:hue-rotate-180 dark:invert"
+          priority
+        />
+      </div>
+
+      {/* Form - Full width on mobile, 40% on desktop */}
+      <div className='text-center space-y-4 lg:space-y-8 w-full lg:w-2/5 px-4 md:px-8 lg:px-12 py-4 lg:py-0 flex flex-col justify-center overflow-y-auto lg:overflow-visible'>
+        {/* Content */}
+        <div className="space-y-8">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
+            Create Your Account
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed px-4">
+            Join DexMail to send emails with crypto transfers and manage your digital assets.
+          </p>
+        </div>
+
+        {/* Registration Form */}
+        <div className="space-y-14 max-w-[560px] mx-auto w-full">
+          {/* Wallet Registration Option */}
+          <div className="flex items-center space-x-3 justify-start px-1">
+            <Checkbox
+              id="use-wallet"
+              checked={useWalletAuth}
+              onCheckedChange={(checked) => {
+                setUseWalletAuth(checked as boolean);
+                if (!checked) {
+                  resetWalletConnection();
+                } else {
+                  resetEmbeddedFlow();
+                }
+                setError('');
+              }}
+            />
+            <Label htmlFor="use-wallet" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+              Use external wallet instead of Coinbase embedded wallet
+            </Label>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg">
+              <AlertCircle className="h-4 w-4" />
+              <span className="text-sm">{error}</span>
+            </div>
+          )}
 
           <div className="space-y-4">
             {!useWalletAuth ? (
@@ -707,38 +723,26 @@ export default function RegisterPage() {
           </div>
 
           {/* Sign in link */}
-          {!authComplete && !embeddedComplete && (
-            <div className="text-center text-sm">
+          {useWalletAuth && !authComplete && (
+            <div className="text-sm text-slate-600 dark:text-slate-400">
               Already have an account?{" "}
-              <Link href="/login" className="underline underline-offset-4 hover:text-primary">
-                Sign in
+              <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover dark:text-blue-400 font-medium">
+                Sign in with wallet
               </Link>
             </div>
           )}
-            </div>
-          </form>
-          <div className="relative hidden flex-col items-center justify-center bg-muted p-8 md:flex">
-            <Image
-              src="/logo.png"
-              alt="DexMail Logo"
-              width={120}
-              height={120}
-              className="rounded-2xl mb-4"
-              priority
-            />
-            <div className="text-center space-y-2">
-              <h2 className="text-2xl font-semibold tracking-tight">Join DexMail</h2>
-              <p className="text-sm text-muted-foreground">
-                Create your account and experience the future of private communication.
-              </p>
-            </div>
+        </div>
+        {/* Sign up link */}
+        {!authComplete && !embeddedComplete && (
+          <div className="text-sm text-slate-600 dark:text-slate-400">
+            Already have an account?{" "}
+            <Link href="/login" className="text-brand-blue hover:text-brand-blue-hover dark:text-blue-400 font-medium">
+              Sign in
+            </Link>
           </div>
-        </CardContent>
-      </Card>
-      <div className="text-balance text-center text-xs text-muted-foreground [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary">
-        By clicking continue, you agree to our <Link href="#">Terms of Service</Link>{" "}
-        and <Link href="#">Privacy Policy</Link>.
+        )}
       </div>
+
     </div>
   );
 }
