@@ -431,7 +431,7 @@ export default function LoginPage() {
         </div>
       </div>
       
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden bg-white dark:bg-slate-800 border-0 shadow-lg">
         <CardContent className="grid p-0 md:grid-cols-2">
           <form className="p-6 md:p-8" onSubmit={(e) => e.preventDefault()}>
             <div className="flex flex-col gap-6">
@@ -706,7 +706,7 @@ export default function LoginPage() {
               )}
             </div>
           </form>
-          <div className="relative hidden flex-col items-center justify-center bg-muted p-8 md:flex">
+          <div className="relative hidden flex-col items-center justify-center bg-slate-50 dark:bg-slate-900 p-8 md:flex md:border-l-0 shadow-inner">
             <Image
               src="/logo.png"
               alt="DexMail Logo"
