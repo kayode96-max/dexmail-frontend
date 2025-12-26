@@ -19,6 +19,12 @@ import {
   Mail as MailIcon,
   MailOpen,
   AlertCircle,
+  Paperclip,
+  Download,
+  File,
+  Image,
+  FileText,
+  FileArchive,
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 
@@ -90,6 +96,26 @@ function isLikelyHtml(content: string): boolean {
   );
   
   return hasHtmlTags && hasClosingTags;
+}
+
+// Helper function to get file icon based on MIME type
+function getFileIcon(type: string) {
+  if (type.startsWith('image/')) return Image;
+  if (type.includes('pdf') || type.includes('document')) return FileText;
+  if (type.includes('zip') || type.includes('archive') || type.includes('compressed')) return FileArchive;
+  return File;
+}
+
+// Format file size for display
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Get IPFS gateway URL
+function getIpfsUrl(cid: string): string {
+  return `https://gateway.pinata.cloud/ipfs/${cid}`;
 }
 
 function parseEmailThread(mail: Mail): ThreadMessage[] {
@@ -594,6 +620,65 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
             })()}
           </div>
         )}
+
+        {/* File Attachments Section */}
+        {mail && mail.attachments && mail.attachments.length > 0 && (
+          <div className="px-4 pb-4">
+            <div className="rounded-lg border bg-card p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">
+                  Attachments ({mail.attachments.length})
+                </span>
+              </div>
+              <div className="grid gap-2">
+                {mail.attachments.map((attachment, index) => {
+                  const FileIcon = getFileIcon(attachment.type);
+                  const downloadUrl = getIpfsUrl(attachment.cid);
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      {/* File Icon */}
+                      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                        <FileIcon className="h-5 w-5 text-muted-foreground" />
+                      </div>
+
+                      {/* File Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{attachment.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(attachment.size)}
+                        </p>
+                      </div>
+
+                      {/* Download Button */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="flex-shrink-0"
+                      >
+                        <a
+                          href={downloadUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download={attachment.name}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          Download
+                        </a>
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         <Separator className="mt-auto" />
         <div className="p-4">
           <div className="grid gap-4">

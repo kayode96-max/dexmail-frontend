@@ -78,9 +78,6 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// Configure the route to handle larger payloads
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};
+// Route segment config for App Router
+// FormData is handled natively, no special config needed
+export const dynamic = 'force-dynamic';

@@ -1,4 +1,11 @@
 
+export type EmailAttachment = {
+  name: string;
+  size: number;
+  type: string;
+  cid: string;
+};
+
 export type Mail = {
   id: string;
   name: string;
@@ -13,4 +20,5 @@ export type Mail = {
   hasCryptoTransfer?: boolean;
   assets?: any[]; 
   inReplyTo?: string;
+  attachments?: EmailAttachment[];
 };
