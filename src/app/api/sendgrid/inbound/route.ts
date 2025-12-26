@@ -7,7 +7,9 @@ interface EmailAttachment {
     name: string;
     size: number;
     type: string;
-    cid: string;
+    cid?: string;   // IPFS CID (for uploaded attachments)
+    url?: string;   // Direct URL fallback (for failed uploads)
+    content?: string; // Base64 content fallback
 }
 
 // SendGrid Inbound Parse Webhook handler
@@ -68,6 +70,21 @@ export async function POST(req: NextRequest) {
                             log(`Uploaded attachment to IPFS: ${attachmentResult.IpfsHash}`);
                         } catch (attachErr) {
                             console.error(`[SendGrid Inbound] Failed to upload attachment ${meta.filename}:`, attachErr);
+                            // Fallback: Store as base64 data URL if IPFS upload fails
+                            try {
+                                const arrayBuffer = await file.arrayBuffer();
+                                const base64 = Buffer.from(arrayBuffer).toString('base64');
+                                const dataUrl = `data:${meta.type || file.type};base64,${base64}`;
+                                attachments.push({
+                                    name: meta.filename || file.name,
+                                    size: file.size,
+                                    type: meta.type || file.type,
+                                    url: dataUrl
+                                });
+                                log(`Stored attachment as data URL fallback: ${meta.filename}`);
+                            } catch (fallbackErr) {
+                                console.error(`[SendGrid Inbound] Failed to create fallback for ${meta.filename}:`, fallbackErr);
+                            }
                         }
                     }
                 }
@@ -111,6 +128,22 @@ export async function POST(req: NextRequest) {
                     log(`Uploaded parsed attachment to IPFS: ${attachmentResult.IpfsHash}`);
                 } catch (attachErr) {
                     console.error(`[SendGrid Inbound] Failed to upload parsed attachment:`, attachErr);
+                    // Fallback: Store as base64 data URL if IPFS upload fails
+                    try {
+                        const base64 = Buffer.isBuffer(att.content) 
+                            ? att.content.toString('base64')
+                            : Buffer.from(att.content).toString('base64');
+                        const dataUrl = `data:${att.contentType};base64,${base64}`;
+                        attachments.push({
+                            name: att.filename || 'attachment',
+                            size: att.size,
+                            type: att.contentType,
+                            url: dataUrl
+                        });
+                        log(`Stored parsed attachment as data URL fallback: ${att.filename}`);
+                    } catch (fallbackErr) {
+                        console.error(`[SendGrid Inbound] Failed to create fallback for parsed attachment:`, fallbackErr);
+                    }
                 }
             }
         }

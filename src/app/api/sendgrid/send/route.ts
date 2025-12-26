@@ -14,7 +14,8 @@ interface EmailAttachment {
     name: string;
     size: number;
     type: string;
-    cid: string;
+    cid?: string;  // IPFS CID
+    url?: string;  // Direct URL or data URL fallback
 }
 
 // Fetch file from IPFS and convert to base64
@@ -31,6 +32,37 @@ async function fetchAttachmentFromIPFS(cid: string): Promise<string | null> {
         console.error(`[SendGrid] Failed to fetch attachment from IPFS: ${cid}`, error);
         return null;
     }
+}
+
+// Get base64 content from attachment (handles CID, URL, or data URL)
+async function getAttachmentContent(att: EmailAttachment): Promise<string | null> {
+    // If CID exists, fetch from IPFS
+    if (att.cid) {
+        return fetchAttachmentFromIPFS(att.cid);
+    }
+    
+    // If URL is a data URL, extract base64
+    if (att.url?.startsWith('data:')) {
+        const base64Match = att.url.match(/base64,(.+)$/);
+        if (base64Match) {
+            return base64Match[1];
+        }
+    }
+    
+    // If URL is a regular URL, fetch it
+    if (att.url) {
+        try {
+            const response = await fetch(att.url);
+            if (!response.ok) return null;
+            const arrayBuffer = await response.arrayBuffer();
+            return Buffer.from(arrayBuffer).toString('base64');
+        } catch (error) {
+            console.error(`[SendGrid] Failed to fetch attachment from URL: ${att.url}`, error);
+            return null;
+        }
+    }
+    
+    return null;
 }
 
 export async function POST(req: NextRequest) {
@@ -61,7 +93,7 @@ export async function POST(req: NextRequest) {
         
         if (attachments && Array.isArray(attachments)) {
             for (const att of attachments as EmailAttachment[]) {
-                const content = await fetchAttachmentFromIPFS(att.cid);
+                const content = await getAttachmentContent(att);
                 if (content) {
                     sgAttachments.push({
                         content,

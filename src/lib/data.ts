@@ -3,7 +3,8 @@ export type EmailAttachment = {
   name: string;
   size: number;
   type: string;
-  cid: string;
+  cid?: string;  // IPFS CID (for uploaded attachments)
+  url?: string;  // Direct URL (for external attachments that failed IPFS upload)
 };
 
 export type Mail = {

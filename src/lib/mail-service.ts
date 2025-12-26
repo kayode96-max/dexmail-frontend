@@ -375,6 +375,9 @@ class MailService {
               console.log('[Bridge] 📤 Relaying via SendGrid Bridge...');
               console.log('[Bridge] 📧 Recipient:', recipient);
               console.log('[Bridge] 📨 Sender (Reply-To):', data.from);
+              if (data.attachments?.length) {
+                console.log('[Bridge] 📎 Attachments:', data.attachments.length);
+              }
 
               const isDexMail = data.from.toLowerCase().endsWith('@dexmail.app');
               const fromEmail = isDexMail ? data.from : 'no-reply@dexmail.app';
@@ -391,7 +394,8 @@ class MailService {
                   replyTo: data.from,
                   subject: data.subject,
                   text: emailBody,
-                  html: emailBody.replace(/\n/g, '<br/>')
+                  html: emailBody.replace(/\n/g, '<br/>'),
+                  attachments: data.attachments || []
                 })
               });
 

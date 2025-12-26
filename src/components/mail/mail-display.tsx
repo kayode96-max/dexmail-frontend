@@ -122,9 +122,15 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-// Get IPFS gateway URL
-function getIpfsUrl(cid: string): string {
-  return `https://gateway.pinata.cloud/ipfs/${cid}`;
+// Get attachment URL - handles both IPFS CID and direct URLs
+function getAttachmentUrl(attachment: { cid?: string; url?: string }): string {
+  if (attachment.cid) {
+    return `https://gateway.pinata.cloud/ipfs/${attachment.cid}`;
+  }
+  if (attachment.url) {
+    return attachment.url;
+  }
+  return '';
 }
 
 function parseEmailThread(mail: Mail): ThreadMessage[] {
@@ -681,7 +687,7 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
               <div className="grid gap-2">
                 {mail.attachments.map((attachment, index) => {
                   const FileIcon = getFileIcon(attachment.type);
-                  const downloadUrl = getIpfsUrl(attachment.cid);
+                  const downloadUrl = getAttachmentUrl(attachment);
                   const isImage = attachment.type.startsWith('image/');
                   
                   return (
@@ -690,11 +696,13 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                       className="flex items-center gap-3 p-2 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
                       {/* Preview or Icon */}
-                      {isImage ? (
+                      {isImage && downloadUrl ? (
                         <div 
                           className="h-10 w-10 rounded overflow-hidden flex-shrink-0 cursor-pointer"
                           onClick={() => {
-                            const imgIndex = imageAttachments.findIndex(a => a.cid === attachment.cid);
+                            const imgIndex = imageAttachments.findIndex(a => 
+                              (a.cid && a.cid === attachment.cid) || (a.url && a.url === attachment.url)
+                            );
                             if (imgIndex !== -1) openLightbox(imgIndex);
                           }}
                         >
@@ -720,12 +728,14 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
 
                       {/* Actions */}
                       <div className="flex items-center gap-1 flex-shrink-0">
-                        {isImage && (
+                        {isImage && downloadUrl && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              const imgIndex = imageAttachments.findIndex(a => a.cid === attachment.cid);
+                              const imgIndex = imageAttachments.findIndex(a => 
+                                (a.cid && a.cid === attachment.cid) || (a.url && a.url === attachment.url)
+                              );
                               if (imgIndex !== -1) openLightbox(imgIndex);
                             }}
                           >
@@ -793,7 +803,7 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                 {/* Main image */}
                 <div className="flex flex-col items-center justify-center p-4 max-h-[90vh]">
                   <img
-                    src={getIpfsUrl(imageAttachments[lightboxIndex]?.cid)}
+                    src={imageAttachments[lightboxIndex] ? getAttachmentUrl(imageAttachments[lightboxIndex]) : ''}
                     alt={imageAttachments[lightboxIndex]?.name}
                     className="max-w-full max-h-[80vh] object-contain"
                   />
@@ -825,7 +835,7 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                   asChild
                 >
                   <a
-                    href={getIpfsUrl(imageAttachments[lightboxIndex]?.cid)}
+                    href={imageAttachments[lightboxIndex] ? getAttachmentUrl(imageAttachments[lightboxIndex]) : ''}
                     target="_blank"
                     rel="noopener noreferrer"
                     download={imageAttachments[lightboxIndex]?.name}
@@ -848,7 +858,7 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                         )}
                       >
                         <img
-                          src={getIpfsUrl(attachment.cid)}
+                          src={getAttachmentUrl(attachment)}
                           alt={attachment.name}
                           className="h-full w-full object-cover"
                         />
