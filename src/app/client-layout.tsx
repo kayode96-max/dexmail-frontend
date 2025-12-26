@@ -29,6 +29,7 @@ export function ClientLayout({
                 projectId,
                 appName: 'DexMail',
                 ethereum: { createOnLogin: 'smart' },
+                disableAnalytics: true,
             }}
         >
             <RainbowProviders>

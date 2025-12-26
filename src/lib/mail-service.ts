@@ -252,7 +252,6 @@ class MailService {
           value: asset.type === 'eth' ? amount : BigInt(0)
         });
       } else {
-        // External wallet: use wagmi
         txHash = await writeContract(wagmiConfig, {
           address: BASEMAILER_ADDRESS,
           abi: baseMailerAbi,
@@ -299,7 +298,6 @@ class MailService {
       }
 
     } else if (data.to.length > 0) {
-      // Bulk send: loop through all recipients
       console.log(`[MailService] Sending to ${data.to.length} recipient(s)`);
       const txHashes: string[] = [];
 
@@ -308,14 +306,9 @@ class MailService {
 
         try {
           let recipientTxHash = '';
-
-          // Use appropriate transaction method based on auth type
-          // Check whitelist and fee
           let value = BigInt(0);
           if (!isExternal) {
             try {
-              // Check if sender is whitelisted by recipient
-              // Args: userEmail (recipient), targetSenderEmail (sender)
               const isWhitelisted = await readContract(wagmiConfig, {
                 address: BASEMAILER_ADDRESS,
                 abi: baseMailerAbi,
@@ -341,9 +334,7 @@ class MailService {
             }
           }
 
-          // Use appropriate transaction method based on auth type
           if (authType === 'coinbase-embedded' && sendTransaction) {
-            // Embedded wallet: use CDP transaction
             const encodedData = encodeFunctionData({
               abi: baseMailerAbi,
               functionName: 'indexMail',
@@ -356,7 +347,6 @@ class MailService {
               value: value
             });
           } else {
-            // External wallet: use wagmi
             recipientTxHash = await writeContract(wagmiConfig, {
               address: BASEMAILER_ADDRESS,
               abi: baseMailerAbi,
@@ -369,7 +359,6 @@ class MailService {
           console.log(`[MailService] Indexed mail for ${recipient} with tx:`, recipientTxHash);
           txHashes.push(recipientTxHash);
 
-          // Handle external email relay via SendGrid
           if (isExternal) {
             try {
               console.log('--------------------------------------------------');
@@ -410,11 +399,9 @@ class MailService {
           }
         } catch (recipientError) {
           console.error(`[MailService] Failed to send to ${recipient}:`, recipientError);
-          // Continue with other recipients even if one fails
         }
       }
 
-      // Use the first transaction hash as the primary message ID
       txHash = txHashes[0] || '';
       console.log(`[MailService] Bulk send complete. ${txHashes.length}/${data.to.length} successful`);
     }
@@ -432,19 +419,10 @@ class MailService {
   async getRequiredFees(sender: string, recipients: string[]): Promise<FeeInfo> {
     const details: { email: string; fee: bigint; requiresFee: boolean }[] = [];
     let totalFee = BigInt(0);
-
-    // Filter for valid internal recipients only
-    // External emails don't pay fees via this contract usually, or handled differently?
-    // Contract logic usually skips whitelist check for external if passed correctly, 
-    // but here we are checking for "Pay2Contact". Usually only applies to DexMail users.
-    // If recipient is external, we probably don't pay fee to them via contract directly unless registered.
-    // For now, let's assume fees only apply to registered @dexmail.app users.
-
     const internalRecipients = recipients.filter(r => r.endsWith('@dexmail.app'));
 
     for (const recipient of internalRecipients) {
       try {
-        // Check if sender is whitelisted
         const isWhitelisted = await readContract(wagmiConfig, {
           address: BASEMAILER_ADDRESS,
           abi: baseMailerAbi,
@@ -491,19 +469,16 @@ class MailService {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     for (const email of emails) {
-      // Basic format validation
       if (!emailRegex.test(email)) {
         results[email] = { isValid: false, exists: false, reason: 'Invalid email format' };
         continue;
       }
 
-      // External emails are always valid (we can't check them)
       if (!email.toLowerCase().endsWith('@dexmail.app')) {
         results[email] = { isValid: true, exists: true };
         continue;
       }
 
-      // Check if @dexmail.app address exists on blockchain
       try {
         const registrationStatus = await readContract(wagmiConfig, {
           address: BASEMAILER_ADDRESS,
