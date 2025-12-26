@@ -24,7 +24,7 @@ interface FileAttachmentProps {
   maxFiles?: number; // default 5
 }
 
-const DEFAULT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const DEFAULT_MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const DEFAULT_MAX_FILES = 5;
 
 // Get appropriate icon for file type
