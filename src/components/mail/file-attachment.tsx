@@ -20,14 +20,13 @@ interface FileAttachmentProps {
   attachments: FileAttachment[];
   onChange: (attachments: FileAttachment[]) => void;
   disabled?: boolean;
-  maxFileSize?: number; // in bytes, default 10MB
-  maxFiles?: number; // default 5
+  maxFileSize?: number;
+  maxFiles?: number;
 }
 
 const DEFAULT_MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
 const DEFAULT_MAX_FILES = 5;
 
-// Get appropriate icon for file type
 function getFileIcon(type: string) {
   if (type.startsWith('image/')) return Image;
   if (type.includes('pdf') || type.includes('document')) return FileText;
@@ -35,7 +34,6 @@ function getFileIcon(type: string) {
   return File;
 }
 
-// Format file size for display
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -52,7 +50,6 @@ export function FileAttachmentInput({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  // Keep a ref to track current attachments for async operations
   const attachmentsRef = useRef(attachments);
   
   useEffect(() => {
