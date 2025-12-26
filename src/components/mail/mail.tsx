@@ -43,6 +43,7 @@ import { useMail } from '@/contexts/mail-context';
 import { Tag, RotateCcw } from 'lucide-react';
 import { useMailLabels } from '@/hooks/use-mail-labels';
 import { useAccount } from 'wagmi'; // Added this import
+import { ThemeToggle } from '../theme-toggle';
 
 interface HeaderProps {
   selectedMailIds: string[];
@@ -163,6 +164,7 @@ function Header({ selectedMailIds, onDelete, onArchive, onSpam, onRestore, onAdd
             <Edit className="mr-2 h-4 w-4" /> Write Message
           </Button>
         </ComposeDialog>
+        <ThemeToggle />
       </div>
     </div>
   );

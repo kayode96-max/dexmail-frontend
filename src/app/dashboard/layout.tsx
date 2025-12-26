@@ -19,6 +19,7 @@ import { MailProvider } from '@/contexts/mail-context';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 function BottomNavBar() {
   const pathname = usePathname();
@@ -103,6 +104,9 @@ function DashboardLayoutContent({
   return (
     <>
       <div className="md:hidden flex flex-col h-screen-mobile w-full">
+        <div className="fixed top-2 right-2 z-50">
+          <ThemeToggle />
+        </div>
         <main className="flex-1 overflow-auto pb-16">{children}</main>
         <BottomNavBar />
       </div>
