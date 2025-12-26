@@ -16,14 +16,11 @@ const limiter = rateLimit({
 export async function proxy(request: NextRequest) {
     const response = NextResponse.next();
 
-    // specific logic for API routes
     if (request.nextUrl.pathname.startsWith('/api')) {
-        // Extract client identifiers
         const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() 
             ?? request.headers.get('x-real-ip') 
             ?? '127.0.0.1';
         
-        // Generate fingerprint from request headers
         const fingerprint = generateFingerprint({
             userAgent: request.headers.get('user-agent'),
             acceptLanguage: request.headers.get('accept-language'),
@@ -33,7 +30,6 @@ export async function proxy(request: NextRequest) {
             cacheControl: request.headers.get('cache-control'),
         });
 
-        // Perform rate limit check with fingerprinting
         const { 
             isRateLimited, 
             limit, 
@@ -44,7 +40,6 @@ export async function proxy(request: NextRequest) {
             reason 
         } = await limiter.check(20, ip, fingerprint);
 
-        // Set rate limit headers
         response.headers.set('X-RateLimit-Limit', limit.toString());
         response.headers.set('X-RateLimit-Remaining', remaining.toString());
 
@@ -66,7 +61,6 @@ export async function proxy(request: NextRequest) {
         }
 
         if (isRateLimited) {
-            // Delay response for suspicious clients (tarpit)
             if (suspicionScore > 50) {
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
@@ -85,17 +79,24 @@ export async function proxy(request: NextRequest) {
             });
         }
 
-        // Add suspicion indicator header for monitoring
         if (suspicionScore > 25) {
             response.headers.set('X-Suspicion-Level', suspicionScore > 50 ? 'high' : 'medium');
         }
     }
 
-    // Security Headers
     response.headers.set('X-Frame-Options', 'DENY');
     response.headers.set('X-Content-Type-Options', 'nosniff');
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-    response.headers.set('Content-Security-Policy', "default-src 'self' https: data: 'unsafe-inline' 'unsafe-eval';");
+    response.headers.set(
+        'Content-Security-Policy',
+        [
+            "default-src 'self' https: http: data: 'unsafe-inline' 'unsafe-eval'",
+            "img-src 'self' https: http: data: blob:",
+            "connect-src 'self' https: http: wss: ws:",
+            "font-src 'self' https: http: data:",
+            "frame-src 'self' https: http:",
+        ].join('; ')
+    );
 
     return response;
 }
