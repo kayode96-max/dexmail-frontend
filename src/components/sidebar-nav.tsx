@@ -210,9 +210,6 @@ export function SidebarNav() {
           <div className="flex-1">
             <UserNav />
           </div>
-          <div className="group-data-[collapsible=icon]/sidebar:hidden">
-            <ThemeToggle />
-          </div>
         </div>
       </div>
     </div>

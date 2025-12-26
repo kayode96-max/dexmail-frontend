@@ -29,6 +29,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ZoomIn,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 
@@ -59,6 +61,117 @@ import { useAuth } from '@/contexts/auth-context';
 import { Loader2 } from 'lucide-react';
 import { useSendUserOperation, useCurrentUser, useIsSignedIn } from '@coinbase/cdp-hooks';
 
+// Component to render message content with collapsible forwarded headers
+function MessageContent({ content }: { content: string }) {
+  const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
+
+  // Parse content into segments (regular text and forwarded headers)
+  const parseContent = (text: string) => {
+    const forwardedPattern = /(-{5,}\s*Forwarded message\s*-{5,})\n(From:\s*(.+?))\n(Date:\s*(.+?))\n(Subject:\s*(.+?))\n(To:\s*(.+?))\n/gi;
+    const segments: Array<{ type: 'text' | 'forwarded'; content: string; from?: string; date?: string; subject?: string; to?: string }> = [];
+    
+    let lastIndex = 0;
+    let match;
+    let forwardedIndex = 0;
+    
+    while ((match = forwardedPattern.exec(text)) !== null) {
+      // Add text before the forwarded header
+      if (match.index > lastIndex) {
+        segments.push({ type: 'text', content: text.slice(lastIndex, match.index) });
+      }
+      
+      // Add the forwarded header as a structured segment
+      segments.push({
+        type: 'forwarded',
+        content: match[0],
+        from: match[3],
+        date: match[5],
+        subject: match[7],
+        to: match[9],
+      });
+      
+      lastIndex = match.index + match[0].length;
+      forwardedIndex++;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      segments.push({ type: 'text', content: text.slice(lastIndex) });
+    }
+    
+    return segments;
+  };
+
+  const toggleSection = (index: number) => {
+    setExpandedSections(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
+  const segments = parseContent(content);
+  let forwardedCounter = 0;
+
+  return (
+    <>
+      {segments.map((segment, index) => {
+        if (segment.type === 'text') {
+          return <span key={index}>{segment.content}</span>;
+        }
+        
+        const currentForwardedIndex = forwardedCounter++;
+        const isExpanded = expandedSections.has(currentForwardedIndex);
+        
+        return (
+          <div 
+            key={index} 
+            className="border-l-2 border-muted-foreground/30 pl-3 my-3 py-1"
+          >
+            <div className="text-muted-foreground font-medium text-xs mb-1">
+              ---------- Forwarded message ----------
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">From: </span>
+              <span>{segment.from}</span>
+            </div>
+            <div className="text-sm">
+              <span className="text-muted-foreground">Date: </span>
+              <span>{segment.date}</span>
+            </div>
+            {isExpanded && (
+              <>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Subject: </span>
+                  <span>{segment.subject}</span>
+                </div>
+                <div className="text-sm">
+                  <span className="text-muted-foreground">To: </span>
+                  <span>{segment.to}</span>
+                </div>
+              </>
+            )}
+            <button
+              onClick={() => toggleSection(currentForwardedIndex)}
+              className="text-xs text-primary hover:underline mt-1 flex items-center gap-1"
+            >
+              {isExpanded ? (
+                <>Show less <ChevronUp className="h-3 w-3" /></>
+              ) : (
+                <>Show more details <ChevronDown className="h-3 w-3" /></>
+              )}
+            </button>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 interface MailDisplayProps {
   mail: Mail | null;
   onBack?: () => void;
@@ -79,6 +192,39 @@ function cleanEmailBody(content: string): string {
   return content
     .replace(/\s*\(?Sent via DexMail - The Decentralized Email Protocol\)?\s*/g, '')
     .trim();
+}
+
+// Transform forwarded message headers into collapsible HTML structure
+function transformForwardedHeaders(content: string): string {
+  // Pattern to match forwarded message header block (plain text)
+  const forwardedPattern = /(-{5,}\s*Forwarded message\s*-{5,})\n(From:\s*(.+?))\n(Date:\s*(.+?))\n(Subject:\s*(.+?))\n(To:\s*(.+?))\n/gi;
+  
+  let result = content.replace(forwardedPattern, (match, title, fromLine, fromValue, dateLine, dateValue, subjectLine, subjectValue, toLine, toValue) => {
+    return `<div class="forwarded-header">
+      <div class="forwarded-title">${title}</div>
+      <div class="forwarded-from">${fromLine}</div>
+      <div class="forwarded-date">${dateLine}</div>
+      <div class="forwarded-details">
+        <div>${subjectLine}</div>
+        <div>${toLine}</div>
+      </div>
+      <span class="forwarded-toggle">Show more details ▼</span>
+    </div>\n`;
+  });
+
+  // Transform Gmail-style forwarded headers (HTML with gmail_attr class)
+  // Pattern: <div ... class="gmail_attr">---------- Forwarded message ---------<br>From: ...<br>Date: ...<br>Subject: ...<br>To: ...<br></div>
+  const gmailAttrPattern = /(<div[^>]*class="[^"]*gmail_attr[^"]*"[^>]*>)([\s\S]*?---------- Forwarded message ---------[\s\S]*?)(<br\s*\/?>)([\s\S]*?)(<br\s*\/?>)([\s\S]*?)(<br\s*\/?>)([\s\S]*?)(<br\s*\/?>)([\s\S]*?)(<\/div>)/gi;
+  
+  result = result.replace(gmailAttrPattern, (match, openDiv, forwardedTitle, br1, fromContent, br2, dateContent, br3, subjectContent, br4, toContent, closeDiv) => {
+    return `${openDiv}
+      <div class="gmail-forwarded-visible">${forwardedTitle.trim()}${br1}${fromContent}${br2}${dateContent}</div>
+      <div class="gmail-forwarded-hidden">${br3}${subjectContent}${br4}${toContent}</div>
+      <span class="gmail-forwarded-toggle">Show more ▼</span>
+    ${closeDiv}`;
+  });
+
+  return result;
 }
 
 function isLikelyHtml(content: string): boolean {
@@ -389,8 +535,9 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center p-2 md:p-4">
+    <div className="flex h-full max-h-full flex-col overflow-hidden">
+      {/* Fixed Header Toolbar */}
+      <div className="flex-none flex items-center p-2 md:p-4">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ArrowLeft className="h-5 w-5" />
           <span className="sr-only">Back</span>
@@ -461,6 +608,17 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                   </TooltipTrigger>
                   <TooltipContent>Delete</TooltipContent>
                 </Tooltip>
+                <ComposeDialog initialData={getForwardData()}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <Forward className="h-4 w-4" />
+                        <span className="sr-only">Forward</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Forward</TooltipContent>
+                  </Tooltip>
+                </ComposeDialog>
               </>
             )}
           </TooltipProvider>
@@ -472,36 +630,38 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
           </Button>
         </div>
       </div>
-      <Separator />
-      <div className="flex flex-1 flex-col overflow-auto">
+      <Separator className="flex-none" />
+      
+      {/* Scrollable Message Content */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex items-start p-4">
-          <div className="flex w-full items-start gap-4 text-sm">
-            <Avatar>
-              <AvatarImage
-                alt={mail.name}
-                src={userAvatar?.imageUrl}
-                data-ai-hint={userAvatar?.imageHint}
-              />
-              <AvatarFallback>
-                {mail.name
-                  .split(' ')
-                  .map((chunk) => chunk[0])
-                  .join('')}
-              </AvatarFallback>
-            </Avatar>
-            <div className="grid gap-1">
-              <div className="font-semibold">{mail.name}</div>
-              <div className="line-clamp-1 text-xs text-muted-foreground">
+            <div className="flex w-full items-start gap-4 text-sm">
+              <Avatar>
+                <AvatarImage
+                  alt={mail.name}
+                  src={userAvatar?.imageUrl}
+                  data-ai-hint={userAvatar?.imageHint}
+                />
+                <AvatarFallback>
+                  {mail.name
+                    .split(' ')
+                    .map((chunk) => chunk[0])
+                    .join('')}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid gap-1 min-w-0 flex-1">
+                <div className="font-semibold truncate">{mail.name}</div>
+              <div className="line-clamp-1 text-xs text-muted-foreground truncate">
                 Reply-to: {mail.email}
               </div>
             </div>
-            <div className="ml-auto text-xs text-muted-foreground">
+            <div className="ml-auto text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
               {format(mailDate, "MMM d, yyyy, h:mm a")}
             </div>
           </div>
         </div>
         <div className="p-4 pt-0">
-          <h1 className="text-2xl font-bold">{mail.subject}</h1>
+          <h1 className="text-xl md:text-2xl font-bold break-words">{mail.subject}</h1>
           {mail.inReplyTo && (
             <div className="mt-2">
               <Button
@@ -582,9 +742,11 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
               // Check if the mail body is HTML
               if (isLikelyHtml(mail.body)) {
                 const cleanBody = cleanEmailBody(mail.body);
-                const sanitizedHtml = DOMPurify.sanitize(cleanBody, {
+                // Transform forwarded headers before sanitization
+                const transformedBody = transformForwardedHeaders(cleanBody);
+                const sanitizedHtml = DOMPurify.sanitize(transformedBody, {
                   USE_PROFILES: { html: true },
-                  ADD_ATTR: ['target', 'style', 'class', 'width', 'height', 'align', 'valign', 'bgcolor', 'cellpadding', 'cellspacing', 'border', 'colspan', 'rowspan', 'src', 'alt', 'href'],
+                  ADD_ATTR: ['target', 'style', 'class', 'width', 'height', 'align', 'valign', 'bgcolor', 'cellpadding', 'cellspacing', 'border', 'colspan', 'rowspan', 'src', 'alt', 'href', 'onclick'],
                   ADD_TAGS: ['style', 'center', 'table', 'tr', 'td', 'tbody', 'thead', 'tfoot', 'th', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'div', 'span', 'b', 'i', 'strong', 'em', 'ul', 'ol', 'li', 'br', 'hr', 'a', 'img', 'blockquote', 'font', 'u', 'sup', 'sub', 'pre', 'code'],
                   ALLOW_DATA_ATTR: false,
                   FORCE_BODY: true
@@ -593,23 +755,23 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                 return (
                   <div className="rounded-xl border p-4 shadow-sm bg-card text-card-foreground border-slate-200">
                     {/* Header for HTML email same as thread latest message */}
-                    <div className="flex items-start justify-between gap-4 mb-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
                           <AvatarFallback className="bg-primary text-primary-foreground">
                             {mail.name.slice(0, 1).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="grid gap-0.5">
-                          <div className="text-sm font-semibold text-foreground">
+                        <div className="grid gap-0.5 min-w-0">
+                          <div className="text-sm font-semibold text-foreground truncate">
                             {mail.name}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-muted-foreground truncate">
                             {`<${mail.email}>`}
                           </div>
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                      <div className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                         {format(new Date(mail.date), "MMM d, yyyy, h:mm a")}
                       </div>
                     </div>
@@ -619,6 +781,34 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                     <div
                       className="email-content text-sm leading-relaxed mt-4"
                       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+                      onClick={(e) => {
+                        // Handle forwarded header toggle click
+                        const target = e.target as HTMLElement;
+                        
+                        // Handle custom forwarded-header class
+                        const forwardedHeader = target.closest('.forwarded-header');
+                        if (forwardedHeader) {
+                          forwardedHeader.classList.toggle('expanded');
+                          const toggle = forwardedHeader.querySelector('.forwarded-toggle');
+                          if (toggle) {
+                            toggle.textContent = forwardedHeader.classList.contains('expanded') 
+                              ? 'Show less ▲' 
+                              : 'Show more ▼';
+                          }
+                        }
+                        
+                        // Handle Gmail-style forwarded header (.gmail_attr)
+                        const gmailAttr = target.closest('.gmail_attr');
+                        if (gmailAttr) {
+                          gmailAttr.classList.toggle('expanded');
+                          const toggle = gmailAttr.querySelector('.gmail-forwarded-toggle');
+                          if (toggle) {
+                            toggle.textContent = gmailAttr.classList.contains('expanded') 
+                              ? 'Show less ▲' 
+                              : 'Show more ▼';
+                          }
+                        }
+                      }}
                     />
                   </div>
                 );
@@ -638,23 +828,23 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                     msg.isLatest ? "bg-card text-card-foreground border-slate-200" : "bg-muted/30 border-transparent"
                   )}>
                     {/* Header */}
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Avatar className="h-8 w-8 flex-shrink-0">
                           <AvatarFallback className={cn(msg.isLatest ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20")}>
                             {msg.senderName.slice(0, 1).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="grid gap-0.5">
-                          <div className="text-sm font-semibold text-foreground">
+                        <div className="grid gap-0.5 min-w-0">
+                          <div className="text-sm font-semibold text-foreground truncate">
                             {msg.senderName}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-muted-foreground truncate">
                             {msg.senderEmail && `<${msg.senderEmail}>`}
                           </div>
                         </div>
                       </div>
-                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                      <div className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
                         {dateDisplay}
                       </div>
                     </div>
@@ -662,8 +852,8 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                     <Separator className="my-2 opacity-50" />
 
                     {/* Body */}
-                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                      {msg.content}
+                    <div className="text-sm whitespace-pre-wrap leading-relaxed break-words overflow-hidden">
+                      <MessageContent content={msg.content} />
                     </div>
                   </div>
                 );
@@ -870,38 +1060,30 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
             )}
           </DialogContent>
         </Dialog>
+      </div>
 
-        <Separator className="mt-auto" />
-        <div className="p-4">
-          <div className="grid gap-4">
-            <Textarea
-              className="p-4"
-              placeholder={`Reply to ${mail.name}...`}
-              value={replyBody}
-              onChange={(e) => setReplyBody(e.target.value)}
-            />
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={handleReply} disabled={isSendingReply}>
-                {isSendingReply ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="mr-2 h-4 w-4" />
-                    Send
-                  </>
-                )}
-              </Button>
-              <ComposeDialog initialData={getForwardData()}>
-                <Button size="sm" variant="ghost">
-                  <Forward className="mr-2 h-4 w-4" />
-                  Forward
-                </Button>
-              </ComposeDialog>
-            </div>
-          </div>
+      {/* Fixed Reply Box */}
+      <div className="flex-none border-t bg-background p-3 md:p-4 pb-20 md:pb-4">
+        <div className="relative">
+          <Textarea
+            className="pr-12 min-h-[60px] resize-none"
+            placeholder={`Reply to ${mail.name}...`}
+            value={replyBody}
+            onChange={(e) => setReplyBody(e.target.value)}
+            rows={2}
+          />
+          <Button 
+            size="icon" 
+            className="absolute right-2 bottom-2 h-8 w-8"
+            onClick={handleReply} 
+            disabled={isSendingReply}
+          >
+            {isSendingReply ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
     </div>

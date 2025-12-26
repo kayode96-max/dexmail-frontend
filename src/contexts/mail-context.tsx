@@ -22,6 +22,7 @@ interface MailContextType {
     deleteMails: (messageIds: string[]) => void;
     archiveMails: (messageIds: string[]) => void;
     spamMails: (messageIds: string[]) => void;
+    restoreMails: (messageIds: string[]) => void;
     addLabelToMails: (messageIds: string[], label: string) => void;
     removeLabelFromMails: (messageIds: string[], label: string) => void;
     saveDraft: (draft: DraftEmail) => void;
@@ -335,6 +336,16 @@ export function MailProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const restoreMails = (messageIds: string[]) => {
+        if (user?.email) {
+            messageIds.forEach(id => {
+                const realId = id.replace('_sent_copy', '');
+                mailService.restoreFromTrash(realId, user.email);
+            });
+            setStatusVersion(v => v + 1);
+        }
+    };
+
     const addLabelToMails = (messageIds: string[], label: string) => {
         if (user?.email) {
             messageIds.forEach(id => {
@@ -391,6 +402,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
                 deleteMails,
                 archiveMails,
                 spamMails,
+                restoreMails,
                 addLabelToMails,
                 removeLabelFromMails,
                 saveDraft,

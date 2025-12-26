@@ -43,7 +43,7 @@ export default function OnboardingPage() {
   const currentStep = onboardingSteps[step - 1];
 
   return (
-    <div className="min-h-svh flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-hidden">
+    <div className="min-h-svh flex flex-col overflow-hidden">
       {/* Header with Logo - Fixed at top */}
       <div className="flex-none flex items-center justify-between p-3 md:p-4">
         <AppLogo />

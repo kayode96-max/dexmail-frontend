@@ -40,20 +40,23 @@ import {
 } from '../ui/dropdown-menu';
 import Link from 'next/link';
 import { useMail } from '@/contexts/mail-context';
-import { Tag } from 'lucide-react';
+import { Tag, RotateCcw } from 'lucide-react';
 import { useMailLabels } from '@/hooks/use-mail-labels';
 import { useAccount } from 'wagmi'; // Added this import
+import { ThemeToggle } from '../theme-toggle';
 
 interface HeaderProps {
   selectedMailIds: string[];
   onDelete: () => void;
   onArchive: () => void;
   onSpam: () => void;
+  onRestore: () => void;
   onAddLabel: (label: string) => void;
   onRemoveLabel: (label: string) => void;
+  isTrashView?: boolean;
 }
 
-function Header({ selectedMailIds, onDelete, onArchive, onSpam, onAddLabel, onRemoveLabel }: HeaderProps) {
+function Header({ selectedMailIds, onDelete, onArchive, onSpam, onRestore, onAddLabel, onRemoveLabel, isTrashView }: HeaderProps) {
   const labels = useMailLabels();
   const [newLabel, setNewLabel] = useState('');
 
@@ -69,33 +72,47 @@ function Header({ selectedMailIds, onDelete, onArchive, onSpam, onAddLabel, onRe
         {selectedMailIds.length > 0 ? (
           <>
             <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={onArchive}>
-                    <Archive className="h-4 w-4" />
-                    <span className="sr-only">Archive</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Archive</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={onSpam}>
-                    <MoreVertical className="h-4 w-4" /> {/* Using MoreVertical as generic icon for now, or maybe AlertOctagon for spam */}
-                    <span className="sr-only">Mark as Spam</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Mark as Spam</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={onDelete}>
-                    <Trash className="h-4 w-4" />
-                    <span className="sr-only">Delete</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Delete</TooltipContent>
-              </Tooltip>
+              {isTrashView ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={onRestore}>
+                      <RotateCcw className="h-4 w-4" />
+                      <span className="sr-only">Restore</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Restore from Trash</TooltipContent>
+                </Tooltip>
+              ) : (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={onArchive}>
+                        <Archive className="h-4 w-4" />
+                        <span className="sr-only">Archive</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Archive</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={onSpam}>
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Mark as Spam</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Mark as Spam</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={onDelete}>
+                        <Trash className="h-4 w-4" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
+                </>
+              )}
             </TooltipProvider>
 
             <DropdownMenu>
@@ -147,6 +164,7 @@ function Header({ selectedMailIds, onDelete, onArchive, onSpam, onAddLabel, onRe
             <Edit className="mr-2 h-4 w-4" /> Write Message
           </Button>
         </ComposeDialog>
+        <ThemeToggle />
       </div>
     </div>
   );
@@ -238,7 +256,7 @@ export function MailComponent({
   category?: 'all' | 'read' | 'unread' | 'sent' | 'drafts' | 'spam' | 'archive' | 'trash';
   label?: string;
 }) {
-  const { mails, isLoading, deleteMails, archiveMails, spamMails, addLabelToMails, removeLabelFromMails } = useMail();
+  const { mails, isLoading, deleteMails, archiveMails, spamMails, restoreMails, addLabelToMails, removeLabelFromMails } = useMail();
   const [selectedMailId, setSelectedMailId] = React.useState<string | null>(null);
   const [selectedMailIds, setSelectedMailIds] = React.useState<string[]>([]);
   const [activeCategory, setActiveCategory] = React.useState(category);
@@ -464,12 +482,17 @@ export function MailComponent({
           spamMails(selectedMailIds);
           setSelectedMailIds([]);
         }}
+        onRestore={() => {
+          restoreMails(selectedMailIds);
+          setSelectedMailIds([]);
+        }}
         onAddLabel={(label) => {
           addLabelToMails(selectedMailIds, label);
         }}
         onRemoveLabel={(label) => {
           removeLabelFromMails(selectedMailIds, label);
         }}
+        isTrashView={category === 'trash'}
       />
       <div className="flex-1 w-full">
         {(isLoading || isNavigating) && !selectedMail ? (

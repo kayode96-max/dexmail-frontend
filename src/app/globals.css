@@ -92,7 +92,7 @@ body {
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 text-foreground min-h-screen;
   }
 }
 
@@ -104,11 +104,14 @@ body {
   max-width: 100%;
   overflow-wrap: break-word;
   word-wrap: break-word;
+  word-break: break-word;
+  overflow-x: hidden;
 }
 
 /* Preserve inline styles from HTML emails */
 .email-content * {
   max-width: 100%;
+  box-sizing: border-box;
 }
 
 .email-content a {
@@ -157,14 +160,18 @@ body {
 /* Table support for HTML emails (common in marketing emails) */
 .email-content table {
   max-width: 100%;
+  width: 100% !important;
   border-collapse: collapse;
   margin: 0 auto;
+  table-layout: fixed;
 }
 
 .email-content td,
 .email-content th {
   padding: 8px;
   vertical-align: top;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Center element support */
@@ -187,6 +194,88 @@ body {
 .email-content img[width] {
   width: auto;
   max-width: 100%;
+}
+
+/* Gmail-style forwarded message header (.gmail_attr) */
+.email-content .gmail_attr {
+  border-left: 3px solid var(--border);
+  padding-left: 12px;
+  margin: 16px 0;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  position: relative;
+  cursor: pointer;
+}
+
+/* Visible part (forwarded title, from, date) */
+.email-content .gmail_attr .gmail-forwarded-visible {
+  display: block;
+}
+
+/* Hidden part (subject, to) - hidden by default */
+.email-content .gmail_attr .gmail-forwarded-hidden {
+  display: none;
+  margin-top: 4px;
+}
+
+/* Toggle button for gmail_attr */
+.email-content .gmail_attr .gmail-forwarded-toggle {
+  display: block;
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 12px;
+  margin-top: 8px;
+  font-weight: normal;
+}
+
+.email-content .gmail_attr .gmail-forwarded-toggle:hover {
+  text-decoration: underline;
+}
+
+/* When expanded, show hidden content */
+.email-content .gmail_attr.expanded .gmail-forwarded-hidden {
+  display: block;
+}
+
+/* Custom forwarded message styling (plain text) */
+.email-content .forwarded-header {
+  border-left: 3px solid var(--border);
+  padding-left: 12px;
+  margin: 16px 0;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.email-content .forwarded-header .forwarded-title {
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+
+.email-content .forwarded-header .forwarded-from,
+.email-content .forwarded-header .forwarded-date {
+  display: block;
+}
+
+.email-content .forwarded-header .forwarded-details {
+  display: none;
+  margin-top: 4px;
+}
+
+.email-content .forwarded-header.expanded .forwarded-details {
+  display: block;
+}
+
+.email-content .forwarded-header .forwarded-toggle {
+  cursor: pointer;
+  color: var(--primary);
+  font-size: 12px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.email-content .forwarded-header .forwarded-toggle:hover {
+  text-decoration: underline;
 }
 
 /* Dark mode adjustments for HTML email content */
