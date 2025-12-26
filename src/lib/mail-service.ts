@@ -6,11 +6,19 @@ import { parseUnits, parseEther, stringToHex, encodeFunctionData } from 'viem';
 import { cryptoService } from './crypto-service';
 import { generateClaimCode, storeClaimCode, getClaimUrl, formatClaimCode } from './claim-code';
 
+export interface EmailAttachment {
+  name: string;
+  size: number;
+  type: string;
+  cid: string; // IPFS CID
+}
+
 export interface SendEmailData {
   from: string;
   to: string[];
   subject: string;
   body: string;
+  attachments?: EmailAttachment[];
   cryptoTransfer?: {
     enabled: boolean;
     assets: CryptoAsset[];
@@ -130,7 +138,7 @@ class MailService {
       emailBody += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
     }
 
-    const { to, subject, body, inReplyTo } = data;
+    const { to, subject, body, inReplyTo, attachments } = data;
     const assets = data.cryptoTransfer?.assets;
 
     // Validation: Ensure body is not empty to avoid "empty content saved" issues
@@ -146,7 +154,8 @@ class MailService {
       timestamp: Date.now(),
       assets: assets?.map(a => ({ ...a, claimCode: undefined })), // Security: Redact claim code from IPFS
       claimCode: claimCode ? true : false,
-      inReplyTo: inReplyTo
+      inReplyTo: inReplyTo,
+      attachments: attachments // Include file attachments metadata
     };
 
     const ipfsResponse = await fetch('/api/ipfs', {

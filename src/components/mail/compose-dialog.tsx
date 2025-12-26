@@ -30,12 +30,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { CryptoAttachment, type Asset } from './crypto-attachment';
 import { Checkbox } from '../ui/checkbox';
-import { Send, Loader2, Save } from 'lucide-react';
+import { Send, Loader2, Save, Paperclip, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { mailService } from '@/lib/mail-service';
 import { CryptoAsset } from '@/lib/types';
 import { useMail } from '@/contexts/mail-context';
 import { EmailTagInput } from '@/components/ui/email-tag-input';
+import { FileAttachmentInput, type FileAttachment } from './file-attachment';
 
 export function ComposeDialog({
   children,
@@ -61,6 +62,8 @@ export function ComposeDialog({
   }, [open, initialData]);
   const [cryptoEnabled, setCryptoEnabled] = useState(false);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [fileAttachments, setFileAttachments] = useState<FileAttachment[]>([]);
+  const [showAttachments, setShowAttachments] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [feeConfirmation, setFeeConfirmation] = useState<{
     open: boolean;
@@ -121,6 +124,28 @@ export function ComposeDialog({
       toast({
         title: "Not authenticated",
         description: "Please log in to send emails.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if any attachments are still uploading
+    const uploadingFiles = fileAttachments.filter(f => f.uploading);
+    if (uploadingFiles.length > 0) {
+      toast({
+        title: "Files still uploading",
+        description: "Please wait for all attachments to finish uploading.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if any attachments failed to upload
+    const failedFiles = fileAttachments.filter(f => f.error);
+    if (failedFiles.length > 0) {
+      toast({
+        title: "Upload errors",
+        description: "Some attachments failed to upload. Please remove them or try again.",
         variant: "destructive",
       });
       return;
@@ -272,12 +297,23 @@ export function ComposeDialog({
       // Normalize recipient emails: lowercase @dexmail.app addresses
       // (already normalized above for validation)
 
+      // Prepare file attachments data
+      const attachmentsData = fileAttachments
+        .filter(f => f.cid) // Only include successfully uploaded files
+        .map(f => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          cid: f.cid!,
+        }));
+
       const result = await mailService.sendEmail(
         {
           from: user.email, // Use authenticated user's email
           to: recipients,
           subject,
           body,
+          attachments: attachmentsData.length > 0 ? attachmentsData : undefined,
           cryptoTransfer: cryptoEnabled ? {
             enabled: true,
             assets: cryptoAssets
@@ -325,6 +361,8 @@ export function ComposeDialog({
       setBody('');
       setCryptoEnabled(false);
       setAssets([]);
+      setFileAttachments([]);
+      setShowAttachments(false);
     } catch (error) {
       console.error('Failed to send email:', error);
       toast({
@@ -375,10 +413,40 @@ export function ComposeDialog({
           </div>
           <Textarea
             placeholder="Type your message here..."
-            rows={10}
+            rows={8}
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
+
+          {/* File Attachments Section */}
+          <div className="space-y-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="w-full justify-between"
+              onClick={() => setShowAttachments(!showAttachments)}
+              disabled={isLoading}
+            >
+              <span className="flex items-center">
+                <Paperclip className="mr-2 h-4 w-4" />
+                Attachments {fileAttachments.length > 0 && `(${fileAttachments.length})`}
+              </span>
+              {showAttachments ? (
+                <ChevronUp className="h-4 w-4" />
+              ) : (
+                <ChevronDown className="h-4 w-4" />
+              )}
+            </Button>
+            {showAttachments && (
+              <FileAttachmentInput
+                attachments={fileAttachments}
+                onChange={setFileAttachments}
+                disabled={isLoading}
+              />
+            )}
+          </div>
+
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <Checkbox
