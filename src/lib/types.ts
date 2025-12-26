@@ -22,6 +22,13 @@ export interface CryptoAsset {
   tokenId?: string;
 }
 
+export interface EmailAttachment {
+  name: string;
+  size: number;
+  type: string;
+  cid: string;
+}
+
 export interface EmailMessage {
   messageId: string;
   from: string;
@@ -32,6 +39,7 @@ export interface EmailMessage {
   hasCryptoTransfer?: boolean;
   ipfsCid?: string;
   encryptionKey?: string;
+  attachments?: EmailAttachment[];
   content?: {
     from: string;
     to: string[];

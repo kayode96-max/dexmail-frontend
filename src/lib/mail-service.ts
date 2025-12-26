@@ -517,7 +517,7 @@ class MailService {
     return results;
   }
 
-  private async fetchEmailFromIPFS(cidHash: string): Promise<{ subject: string; body: string; from?: string; inReplyTo?: string } | null> {
+  private async fetchEmailFromIPFS(cidHash: string): Promise<{ subject: string; body: string; from?: string; inReplyTo?: string; attachments?: EmailAttachment[] } | null> {
     try {
       console.log('[MailService] fetchEmailFromIPFS called with CID hash:', cidHash);
 
@@ -584,7 +584,8 @@ class MailService {
         subject: data.subject || 'No Subject',
         body: data.htmlBody || data.html || data.body || data.textBody || data.text || '',
         from: data.from,
-        inReplyTo: data.inReplyTo
+        inReplyTo: data.inReplyTo,
+        attachments: data.attachments
       };
     } catch (error) {
       console.error('[MailService] Error fetching from IPFS:', error);
@@ -684,7 +685,8 @@ class MailService {
             timestamp: mail.timestamp.toString(),
             ipfsCid: mail.cid,
             inReplyTo: ipfsContent?.inReplyTo,
-            isSpam: mail.isSpam
+            isSpam: mail.isSpam,
+            attachments: ipfsContent?.attachments
           };
 
           cache[idStr] = newMessage;
@@ -867,7 +869,8 @@ class MailService {
         hasCryptoTransfer: mail.hasCrypto,
         ipfsCid: cidHash,
         inReplyTo: ipfsContent?.inReplyTo,
-        isSpam: mail.isSpam
+        isSpam: mail.isSpam,
+        attachments: ipfsContent?.attachments
       };
       return newMessage;
     } catch (e) {

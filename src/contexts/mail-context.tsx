@@ -111,7 +111,8 @@ export function MailProvider({ children }: { children: ReactNode }) {
                             status.spam ? 'spam' :
                                 status.draft ? 'draft' : 'inbox',
                     body: cleanedBody,
-                    hasCryptoTransfer: m.hasCryptoTransfer
+                    hasCryptoTransfer: m.hasCryptoTransfer,
+                    attachments: m.attachments
                 };
             });
 
@@ -141,7 +142,8 @@ export function MailProvider({ children }: { children: ReactNode }) {
                         status.archived ? 'archive' :
                             status.spam ? 'spam' : 'sent',
                     body: cleanedBody,
-                    hasCryptoTransfer: m.hasCryptoTransfer
+                    hasCryptoTransfer: m.hasCryptoTransfer,
+                    attachments: m.attachments
                 };
             });
 
