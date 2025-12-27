@@ -49,7 +49,7 @@ body {
   }
 
   .dark {
-    --background: 240 4% 10%;
+    --background: 222 47% 5%;
     --foreground: 220 13% 97%;
     --card: 240 4% 17%;
     --card-foreground: 220 13% 97%;
@@ -75,7 +75,7 @@ body {
     --chart-5: 340 75% 55%;
 
     /* Sidebar dark variables */
-    --sidebar-background: 240 4% 12%;
+    --sidebar-background: 222 47% 5%;
     --sidebar-foreground: 220 13% 85%;
     --sidebar-primary: 217 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
@@ -92,7 +92,7 @@ body {
   }
 
   body {
-    @apply bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 text-foreground min-h-screen;
+    @apply bg-slate-50 dark:bg-slate-950 text-foreground min-h-screen;
   }
 }
 
