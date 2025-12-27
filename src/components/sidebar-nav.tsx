@@ -39,34 +39,34 @@ export function SidebarNav() {
   const counts = useMailCounts();
 
   const mainLinks = [
-    { name: 'Sent', href: '/dashboard/sent', icon: Send, count: counts.sent },
-    { name: 'Drafts', href: '/dashboard/drafts', icon: FileText, count: counts.drafts },
-    { name: 'Spam', href: '/dashboard/spam', icon: Users, count: counts.spam },
-    { name: 'Archive', href: '/dashboard/archive', icon: Archive, count: counts.archive },
-    { name: 'Trash', href: '/dashboard/trash', icon: Trash2, count: counts.trash },
+    { name: 'Sent', href: '/sent', icon: Send, count: counts.sent },
+    { name: 'Drafts', href: '/drafts', icon: FileText, count: counts.drafts },
+    { name: 'Spam', href: '/spam', icon: Users, count: counts.spam },
+    { name: 'Archive', href: '/archive', icon: Archive, count: counts.archive },
+    { name: 'Trash', href: '/trash', icon: Trash2, count: counts.trash },
   ];
 
   const labelLinks = useMailLabels();
 
   const bottomLinks = [
-    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
-    { name: 'Help Center', href: '/dashboard/help', icon: HelpCircle },
+    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Help Center', href: '/help', icon: HelpCircle },
   ];
 
   const subNavItems = [
     {
       name: 'All Messages',
-      href: '/dashboard',
+      href: '/mail',
       count: counts.all,
     },
     {
       name: 'Already Read',
-      href: '/dashboard/read',
+      href: '/read',
       count: counts.read,
     },
     {
       name: 'Unread',
-      href: '/dashboard/unread',
+      href: '/unread',
       count: counts.unread,
     },
   ];
@@ -83,11 +83,11 @@ export function SidebarNav() {
       <SidebarMenu className="px-2">
         <SidebarMenuItem>
           <SidebarMenuButton
-            isActive={['/dashboard', '/dashboard/read', '/dashboard/unread'].includes(pathname)}
+            isActive={['/mail', '/read', '/unread'].includes(pathname)}
             tooltip="Inbox"
             asChild
           >
-            <Link href="/dashboard">
+            <Link href="/mail">
               <Inbox />
               <span className="group-data-[collapsible=icon]/sidebar:hidden">Inbox</span>
             </Link>
@@ -118,10 +118,10 @@ export function SidebarNav() {
         <SidebarMenuItem>
           <SidebarMenuButton
             asChild
-            isActive={pathname === '/dashboard/claim'}
+            isActive={pathname === '/claim'}
             tooltip={'Claim'}
           >
-            <Link href="/dashboard/claim" className="w-full">
+            <Link href="/claim" className="w-full">
               <Gift />
               <span className="group-data-[collapsible=icon]/sidebar:hidden">Claim</span>
               {(counts.claim || 0) > 0 && (
@@ -166,10 +166,10 @@ export function SidebarNav() {
             <SidebarMenuItem key={link.name}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === `/dashboard/label/${encodeURIComponent(link.name)}`}
+                isActive={pathname === `/label/${encodeURIComponent(link.name)}`}
                 tooltip={link.name}
               >
-                <Link href={`/dashboard/label/${encodeURIComponent(link.name)}`} className="w-full">
+                <Link href={`/label/${encodeURIComponent(link.name)}`} className="w-full">
                   <div className={`h-2 w-2 rounded-full ${link.color}`} />
                   <span className="group-data-[collapsible=icon]/sidebar:hidden">{link.name}</span>
                   {(link.count || 0) > 0 && (

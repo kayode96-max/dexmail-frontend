@@ -13,7 +13,6 @@ import { format, isToday } from 'date-fns';
 interface MailListProps {
   items: Mail[];
   onSelectMail: (mail: Mail) => void;
-  selectedMailId?: string | null;
   selectedMailIds: string[];
   onToggleMailSelection: (mailId: string) => void;
 }
@@ -21,14 +20,12 @@ interface MailListProps {
 function MailItem({
   mail,
   onSelectMail,
-  selectedMailId,
   isSelected,
   onToggleSelection,
   anyMailSelected,
 }: {
   mail: Mail;
   onSelectMail: (mail: Mail) => void;
-  selectedMailId?: string | null;
   isSelected: boolean;
   onToggleSelection: (mailId: string) => void;
   anyMailSelected: boolean;
@@ -42,7 +39,6 @@ function MailItem({
       className={cn(
         'group/mail-item flex items-start gap-3 p-4 text-left text-sm transition-colors border-b cursor-pointer',
         'hover:bg-accent',
-        selectedMailId === mail.id && 'bg-primary/10',
         !mail.read && 'bg-blue-500/5'
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -83,14 +79,7 @@ function MailItem({
             )}
             <div className={cn("font-semibold", !mail.read && "font-bold")}>{mail.name}</div>
           </div>
-          <div
-            className={cn(
-              'ml-auto text-xs',
-              selectedMailId === mail.id
-                ? 'text-foreground'
-                : 'text-muted-foreground'
-            )}
-          >
+          <div className="ml-auto text-xs text-muted-foreground">
             {isToday(mailDate)
               ? format(mailDate, 'p')
               : format(mailDate, 'MMM d')}
@@ -105,20 +94,14 @@ function MailItem({
   );
 }
 
-export function MailList({
-  items,
-  onSelectMail,
-  selectedMailId,
-  selectedMailIds,
-  onToggleMailSelection,
-}: MailListProps) {
+export function MailList({ items, onSelectMail, selectedMailIds, onToggleMailSelection }: MailListProps) {
   const anyMailSelected = selectedMailIds.length > 0;
 
   if (items.length === 0) {
     return (
-      <div className="flex h-full flex-col md:border-r">
-        <div className="flex flex-1 items-center justify-center p-8">
-          <div className="text-center space-y-3">
+      <div className="flex h-full items-center justify-center p-8">
+        <div className="flex flex-col items-center text-center max-w-md gap-4">
+          <div className="flex flex-col items-center gap-2">
             <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -156,7 +139,6 @@ export function MailList({
               key={item.id}
               mail={item}
               onSelectMail={onSelectMail}
-              selectedMailId={selectedMailId}
               isSelected={selectedMailIds.includes(item.id)}
               onToggleSelection={onToggleMailSelection}
               anyMailSelected={anyMailSelected}

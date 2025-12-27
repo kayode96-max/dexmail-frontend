@@ -44,6 +44,7 @@ import { Tag, RotateCcw, RefreshCw } from 'lucide-react';
 import { useMailLabels } from '@/hooks/use-mail-labels';
 import { useAccount } from 'wagmi'; // Added this import
 import { ThemeToggle } from '../theme-toggle';
+import { useRouter } from 'next/navigation';
 
 interface HeaderProps {
   selectedMailIds: string[];
@@ -238,10 +239,10 @@ function MobileHeader() {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/profile">Profile</Link>
+                <Link href="/profile">Profile</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">Settings</Link>
+                <Link href="/settings">Settings</Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -269,44 +270,22 @@ export function MailComponent({
   label?: string;
 }) {
   const { mails, isLoading, deleteMails, archiveMails, spamMails, restoreMails, addLabelToMails, removeLabelFromMails, refreshMails } = useMail();
-  const [selectedMailId, setSelectedMailId] = React.useState<string | null>(null);
   const [selectedMailIds, setSelectedMailIds] = React.useState<string[]>([]);
   const [activeCategory, setActiveCategory] = React.useState(category);
   const isMobile = useIsMobile();
-  const [fetchedMail, setFetchedMail] = useState<Mail | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
-  const { user } = useAuth(); // Need user email for fetching
+  const router = useRouter();
 
-  // Update activeCategory when prop changes, and close mail view to show the list
+  // Update activeCategory when prop changes
   useEffect(() => {
-    if (!isMobile) {
-      setActiveCategory(category);
-      // Close mail view when navigating to a different category
-      setSelectedMailId(null);
-    }
-  }, [category, isMobile]);
-
-  // Close mail view when category or label changes (mobile)
-  useEffect(() => {
-    if (isMobile) {
-      setSelectedMailId(null);
-    }
-  }, [activeCategory, label, isMobile]);
+    setActiveCategory(category);
+  }, [category]);
 
   const handleRefresh = async () => {
     await refreshMails();
   };
 
-
   // Use context mails if available, otherwise use initial mails
   const displayMails = mails.length > 0 ? mails : initialMails;
-
-  const selectedMail = React.useMemo(() => {
-    if (!selectedMailId) return null;
-    const found = displayMails.find((item) => item.id === selectedMailId);
-    if (found) return found;
-    return fetchedMail && fetchedMail.id === selectedMailId ? fetchedMail : null;
-  }, [selectedMailId, displayMails, fetchedMail]);
 
   // Filter mails based on activeCategory or label
   const filteredMails = React.useMemo(() => {
@@ -339,12 +318,7 @@ export function MailComponent({
   }, [displayMails, activeCategory, label]);
 
   const handleSelectMail = (mail: Mail) => {
-    // Determine strict equality or just id match
-    if (mail.id === selectedMailId) return;
-
-    // Reset fetched mail when selecting a new one from list
-    setFetchedMail(null);
-    setSelectedMailId(mail.id);
+    router.push(`/mail/${mail.id}`);
   };
 
   const handleToggleMailSelection = (mailId: string) => {
@@ -356,130 +330,26 @@ export function MailComponent({
     });
   };
 
-  const handleNavigateToMail = async (mailId: string) => {
-    if (mailId === selectedMailId) return;
-
-    // 1. Check if mail exists in current view (displayMails)
-    const targetMail = displayMails.find(m => m.id === mailId);
-    if (targetMail) {
-      setFetchedMail(null);
-      setSelectedMailId(mailId);
-      return;
-    }
-
-    // 2. Check if it's the already fetched mail
-    if (fetchedMail && fetchedMail.id === mailId) {
-      setSelectedMailId(mailId);
-      return;
-    }
-
-    // 3. Fetch from service if not found
-    if (!user?.email) {
-      console.warn('Cannot fetch mail: User not authenticated');
-      return;
-    }
-
-    setIsNavigating(true);
-    try {
-      console.log('Fetching missing mail:', mailId);
-      const realId = mailId.replace('_sent_copy', '');
-      const message = await mailService.getMessage(realId, user.email);
-
-      if (message) {
-        // Convert EmailMessage to Mail
-        const cleanBody = (text: string | null | undefined) => (text || '').replace(/\s*\(?Sent via DexMail - The Decentralized Email Protocol\)?\s*/g, '').trim();
-        const cleanedBody = cleanBody(message.body);
-
-        const newMail: Mail = {
-          id: message.messageId,
-          name: message.from.split('@')[0] || 'Unknown', // Simple name extraction
-          email: message.from,
-          subject: message.subject,
-          text: cleanedBody.slice(0, 100) || '',
-          date: new Date(Number(message.timestamp) * 1000).toISOString(),
-          read: true, // If we navigate to it, we'll mark it read in display
-          labels: [],
-          status: 'inbox', // Defaulting to inbox context for viewed mail
-          body: cleanedBody,
-          hasCryptoTransfer: message.hasCryptoTransfer,
-          inReplyTo: message.inReplyTo
-        };
-
-        setFetchedMail(newMail);
-        setSelectedMailId(mailId);
-      } else {
-        console.error('Mail not found:', mailId);
-      }
-    } catch (error) {
-      console.error('Error navigating to mail:', error);
-    } finally {
-      setIsNavigating(false);
-    }
-  };
-
-  const handleBack = () => {
-    setSelectedMailId(null);
-  };
-
   if (isMobile) {
     return (
       <div className="flex flex-col h-full w-full bg-background">
         <MobileHeader />
         <div className="mt-16 flex-1 flex flex-col">
-          {!selectedMailId && (
-            <div className="px-4 py-2">
-              <Tabs value={activeCategory === 'sent' ? 'sent' : 'all'} onValueChange={(val) => setActiveCategory(val as any)} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="all">Inbox</TabsTrigger>
-                  <TabsTrigger value="sent">Sent</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          )}
+          <div className="px-4 py-2">
+            <Tabs value={activeCategory === 'sent' ? 'sent' : 'all'} onValueChange={(val) => setActiveCategory(val as any)} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="all">Inbox</TabsTrigger>
+                <TabsTrigger value="sent">Sent</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
           <div className="flex-1 w-full">
-            {isLoading && !selectedMailId ? (
+            {isLoading ? (
               <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
-            ) : selectedMail ? (
-              selectedMail.status === 'draft' ? (
-                <ComposeDialog
-                  key={selectedMail.id}
-                  initialData={{
-                    to: selectedMail.email,
-                    subject: selectedMail.subject,
-                    body: selectedMail.body,
-                    id: selectedMail.id
-                  }}
-                >
-                  <div className="flex h-full flex-col items-center justify-center p-8 text-center gap-4">
-                    <div>
-                      <h2 className="text-2xl font-bold mb-2">Draft Message</h2>
-                      <p className="text-muted-foreground">You are viewing a draft.</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="lg">
-                        <Edit className="mr-2 h-4 w-4" /> Edit
-                      </Button>
-                      <Button size="lg" variant="destructive" onClick={(e) => {
-                        e.stopPropagation();
-                        deleteMails([selectedMail.id]);
-                        setSelectedMailId(null);
-                      }}>
-                        <Trash className="mr-2 h-4 w-4" /> Discard
-                      </Button>
-                    </div>
-                    <Button variant="ghost" onClick={handleBack} className="mt-4">
-                      Back to List
-                    </Button>
-                  </div>
-                </ComposeDialog>
-              ) : (
-                <MailDisplay mail={selectedMail} onBack={handleBack} onNavigateToMail={handleNavigateToMail} />
-              )
             ) : (
               <MailList
                 items={filteredMails}
                 onSelectMail={handleSelectMail}
-                selectedMailId={selectedMailId}
                 selectedMailIds={selectedMailIds}
                 onToggleMailSelection={handleToggleMailSelection}
               />
@@ -520,66 +390,12 @@ export function MailComponent({
         onRefresh={handleRefresh}
       />
       <div className="flex-1 w-full">
-        {(isLoading || isNavigating) && !selectedMail ? (
+        {isLoading ? (
           <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
-        ) : selectedMail ? (
-          selectedMail.status === 'draft' ? (
-            // We need to render the ComposeDialog here.
-            // Since ComposeDialog is a Dialog, we can't easily "embed" it in the view pane like MailDisplay.
-            // But we can make it open automatically.
-            // However, the requirement implies we should be able to "resume editing".
-            // Let's render MailList (so user stays on list) and pop up the dialog.
-            // To do this, we can use a controlled Dialog or just a key to force re-mount.
-            // Let's try to render a special "DraftEditor" component or just reuse ComposeDialog with an auto-open prop?
-            // The current ComposeDialog doesn't support "controlled open" from outside easily without refactoring.
-            // Let's refactor ComposeDialog to accept `open` prop or just use a key.
-            // Actually, let's just show the MailDisplay for now but add a "Resume Editing" button in it?
-            // No, standard behavior is opening the editor.
-            // Let's render the ComposeDialog *instead* of MailDisplay, but since it's a modal, it will pop up.
-            // And we should probably clear selection when it closes?
-            // Let's try this:
-            <ComposeDialog
-              key={selectedMail.id}
-              initialData={{
-                to: selectedMail.email,
-                subject: selectedMail.subject,
-                body: selectedMail.body,
-                id: selectedMail.id
-              }}
-            >
-              {/* We need a trigger, but we want it to open immediately.
-                   We can use a button that we click programmatically?
-                   Or better, update ComposeDialog to open if initialData is present?
-                   I added logic in ComposeDialog to set state from initialData, but not to auto-open.
-                   Let's just show a "Continue Editing" button in the view pane for simplicity and robustness.
-               */}
-              <div className="flex h-full flex-col items-center justify-center p-8 text-center gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Draft Message</h2>
-                  <p className="text-muted-foreground">You are viewing a draft.</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="lg">
-                    <Edit className="mr-2 h-4 w-4" /> Continue Editing
-                  </Button>
-                  <Button size="lg" variant="destructive" onClick={(e) => {
-                    e.stopPropagation();
-                    deleteMails([selectedMail.id]);
-                    setSelectedMailId(null);
-                  }}>
-                    <Trash className="mr-2 h-4 w-4" /> Discard
-                  </Button>
-                </div>
-              </div>
-            </ComposeDialog>
-          ) : (
-            <MailDisplay mail={selectedMail} onBack={handleBack} onNavigateToMail={handleNavigateToMail} />
-          )
         ) : (
           <MailList
             items={filteredMails}
             onSelectMail={handleSelectMail}
-            selectedMailId={selectedMailId}
             selectedMailIds={selectedMailIds}
             onToggleMailSelection={handleToggleMailSelection}
           />
