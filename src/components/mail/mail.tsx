@@ -40,7 +40,7 @@ import {
 } from '../ui/dropdown-menu';
 import Link from 'next/link';
 import { useMail } from '@/contexts/mail-context';
-import { Tag, RotateCcw } from 'lucide-react';
+import { Tag, RotateCcw, RefreshCw } from 'lucide-react';
 import { useMailLabels } from '@/hooks/use-mail-labels';
 import { useAccount } from 'wagmi'; // Added this import
 import { ThemeToggle } from '../theme-toggle';
@@ -54,9 +54,10 @@ interface HeaderProps {
   onAddLabel: (label: string) => void;
   onRemoveLabel: (label: string) => void;
   isTrashView?: boolean;
+  onRefresh: () => void;
 }
 
-function Header({ selectedMailIds, onDelete, onArchive, onSpam, onRestore, onAddLabel, onRemoveLabel, isTrashView }: HeaderProps) {
+function Header({ selectedMailIds, onDelete, onArchive, onSpam, onRestore, onAddLabel, onRemoveLabel, isTrashView, onRefresh }: HeaderProps) {
   const labels = useMailLabels();
   const [newLabel, setNewLabel] = useState('');
 
@@ -152,6 +153,17 @@ function Header({ selectedMailIds, onDelete, onArchive, onSpam, onRestore, onAdd
         ) : (
           <>
             {/* Default actions when nothing selected */}
+            <TooltipProvider delayDuration={0}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={onRefresh}>
+                    <RefreshCw className="h-4 w-4" />
+                    <span className="sr-only">Refresh</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Refresh Emails</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button variant="ghost" size="icon">
               <MoreVertical className="h-4 w-4" />
               <span className="sr-only">More</span>
@@ -256,7 +268,7 @@ export function MailComponent({
   category?: 'all' | 'read' | 'unread' | 'sent' | 'drafts' | 'spam' | 'archive' | 'trash';
   label?: string;
 }) {
-  const { mails, isLoading, deleteMails, archiveMails, spamMails, restoreMails, addLabelToMails, removeLabelFromMails } = useMail();
+  const { mails, isLoading, deleteMails, archiveMails, spamMails, restoreMails, addLabelToMails, removeLabelFromMails, refreshMails } = useMail();
   const [selectedMailId, setSelectedMailId] = React.useState<string | null>(null);
   const [selectedMailIds, setSelectedMailIds] = React.useState<string[]>([]);
   const [activeCategory, setActiveCategory] = React.useState(category);
@@ -265,13 +277,25 @@ export function MailComponent({
   const [isNavigating, setIsNavigating] = useState(false);
   const { user } = useAuth(); // Need user email for fetching
 
-  // Update activeCategory when prop changes, but only if not in mobile view (or handle differently if needed)
-  // For this specific request, we want mobile to control its own state via tabs
+  // Update activeCategory when prop changes, and close mail view to show the list
   useEffect(() => {
     if (!isMobile) {
       setActiveCategory(category);
+      // Close mail view when navigating to a different category
+      setSelectedMailId(null);
     }
   }, [category, isMobile]);
+
+  // Close mail view when category or label changes (mobile)
+  useEffect(() => {
+    if (isMobile) {
+      setSelectedMailId(null);
+    }
+  }, [activeCategory, label, isMobile]);
+
+  const handleRefresh = async () => {
+    await refreshMails();
+  };
 
 
   // Use context mails if available, otherwise use initial mails
@@ -493,6 +517,7 @@ export function MailComponent({
           removeLabelFromMails(selectedMailIds, label);
         }}
         isTrashView={category === 'trash'}
+        onRefresh={handleRefresh}
       />
       <div className="flex-1 w-full">
         {(isLoading || isNavigating) && !selectedMail ? (
