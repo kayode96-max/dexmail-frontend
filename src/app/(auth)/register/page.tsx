@@ -407,8 +407,6 @@ export default function RegisterPage() {
                           id="embedded-email"
                           type="email"
                           placeholder="you@example.com"
-                          className="h-12 bg-white border-slate-200 rounded-xl focus:border-slate-400 focus:ring-slate-400 text-black placeholder:text-slate-500"
-                          style={{ colorScheme: 'light' }}
                           value={embeddedEmail}
                           onChange={(e) => {
                             setEmbeddedEmail(e.target.value);
@@ -507,8 +505,7 @@ export default function RegisterPage() {
                             id="embedded-username"
                             type="text"
                             placeholder="username"
-                            className="h-12 bg-white border-slate-200 rounded-xl focus:border-slate-400 focus:ring-slate-400 text-black placeholder:text-slate-500 pr-32"
-                            style={{ colorScheme: 'light' }}
+                            className="pr-32"
                             value={username}
                             onChange={(e) => {
                               const val = e.target.value;
@@ -522,7 +519,7 @@ export default function RegisterPage() {
                             }}
                             required
                           />
-                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 font-medium bg-transparent">
+                          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground text-sm bg-transparent">
                             {process.env.NEXT_PUBLIC_DOMAIN ? `@${process.env.NEXT_PUBLIC_DOMAIN}` : '@dexmail.app'}
                           </div>
                         </div>
@@ -660,8 +657,7 @@ export default function RegisterPage() {
                           id="wallet-email"
                           type="text"
                           placeholder="username"
-                          className="h-12 bg-white border-slate-200 rounded-xl focus:border-slate-400 focus:ring-slate-400 text-black placeholder:text-slate-500 pr-32"
-                          style={{ colorScheme: 'light' }}
+                          className="pr-32"
                           value={email}
                           onChange={(e) => {
                             const val = e.target.value;
@@ -675,7 +671,7 @@ export default function RegisterPage() {
                           }}
                           required
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-500 font-medium bg-transparent">
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground text-sm bg-transparent">
                           {process.env.NEXT_PUBLIC_DOMAIN ? `@${process.env.NEXT_PUBLIC_DOMAIN}` : '@dexmail.app'}
                         </div>
                       </div>
