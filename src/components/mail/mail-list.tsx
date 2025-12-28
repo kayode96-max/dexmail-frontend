@@ -1,7 +1,7 @@
 
 'use client';
 
-import { ComponentProps, useState } from 'react';
+import { ComponentProps, useState, memo, useCallback } from 'react';
 import type { Mail } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,6 +9,7 @@ import { Checkbox } from '../ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { format, isToday } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 interface MailListProps {
   items: Mail[];
@@ -17,7 +18,8 @@ interface MailListProps {
   onToggleMailSelection: (mailId: string) => void;
 }
 
-function MailItem({
+// Memoized MailItem component to prevent unnecessary re-renders
+const MailItem = memo(({
   mail,
   onSelectMail,
   isSelected,
@@ -29,10 +31,17 @@ function MailItem({
   isSelected: boolean;
   onToggleSelection: (mailId: string) => void;
   anyMailSelected: boolean;
-}) {
+}) => {
+  const router = useRouter();
   const userAvatar = PlaceHolderImages.find((img) => img.id === mail.id);
   const mailDate = new Date(mail.date);
   const [isHovered, setIsHovered] = useState(false);
+
+  // Prefetch the mail page when hovering
+  const handleMouseEnter = useCallback(() => {
+    setIsHovered(true);
+    router.prefetch(`/mail/${mail.id}`);
+  }, [mail.id, router]);
 
   return (
     <div
@@ -41,7 +50,7 @@ function MailItem({
         'hover:bg-accent',
         !mail.read && 'bg-blue-500/5'
       )}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => onSelectMail(mail)}
     >
@@ -92,7 +101,9 @@ function MailItem({
       </div>
     </div>
   );
-}
+});
+
+MailItem.displayName = 'MailItem';
 
 export function MailList({ items, onSelectMail, selectedMailIds, onToggleMailSelection }: MailListProps) {
   const anyMailSelected = selectedMailIds.length > 0;

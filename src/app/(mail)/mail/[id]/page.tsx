@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMail } from '@/contexts/mail-context';
 import { MailDisplay } from '@/components/mail/mail-display';
@@ -14,19 +14,24 @@ export default function EmailPage() {
   const router = useRouter();
   const { mails } = useMail();
   const { user } = useAuth();
-  const [mail, setMail] = useState<Mail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
   const emailId = params.id as string;
+
+  // Check if email exists in context immediately - this is synchronous and fast
+  const mailFromContext = useMemo(() => 
+    mails.find((m) => m.id === emailId), 
+    [mails, emailId]
+  );
+
+  const [mail, setMail] = useState<Mail | null>(mailFromContext || null);
+  const [isLoading, setIsLoading] = useState(!mailFromContext);
 
   useEffect(() => {
     const loadEmail = async () => {
       if (!emailId) return;
 
-      // First check if email exists in context
-      const foundMail = mails.find((m) => m.id === emailId);
-      if (foundMail) {
-        setMail(foundMail);
+      // If email exists in context, use it immediately (no loading)
+      if (mailFromContext) {
+        setMail(mailFromContext);
         setIsLoading(false);
         return;
       }
@@ -76,7 +81,7 @@ export default function EmailPage() {
     };
 
     loadEmail();
-  }, [emailId, mails, user, router]);
+  }, [emailId, mailFromContext, user, router]);
 
   const handleBack = () => {
     router.back();

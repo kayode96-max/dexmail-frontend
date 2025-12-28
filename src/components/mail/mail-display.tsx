@@ -48,7 +48,7 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Textarea } from '../ui/textarea';
 import { useMail } from '@/contexts/mail-context';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { ComposeDialog } from './compose-dialog';
 import {
   Dialog,
@@ -65,23 +65,22 @@ import { useSendUserOperation, useCurrentUser, useIsSignedIn } from '@coinbase/c
 function MessageContent({ content }: { content: string }) {
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
 
-  // Parse content into segments (regular text and forwarded headers)
-  const parseContent = (text: string) => {
+  // Parse content into segments (regular text and forwarded headers) - memoized for performance
+  const segments = useMemo(() => {
     const forwardedPattern = /(-{5,}\s*Forwarded message\s*-{5,})\n(From:\s*(.+?))\n(Date:\s*(.+?))\n(Subject:\s*(.+?))\n(To:\s*(.+?))\n/gi;
-    const segments: Array<{ type: 'text' | 'forwarded'; content: string; from?: string; date?: string; subject?: string; to?: string }> = [];
+    const parsedSegments: Array<{ type: 'text' | 'forwarded'; content: string; from?: string; date?: string; subject?: string; to?: string }> = [];
     
     let lastIndex = 0;
     let match;
-    let forwardedIndex = 0;
     
-    while ((match = forwardedPattern.exec(text)) !== null) {
+    while ((match = forwardedPattern.exec(content)) !== null) {
       // Add text before the forwarded header
       if (match.index > lastIndex) {
-        segments.push({ type: 'text', content: text.slice(lastIndex, match.index) });
+        parsedSegments.push({ type: 'text', content: content.slice(lastIndex, match.index) });
       }
       
       // Add the forwarded header as a structured segment
-      segments.push({
+      parsedSegments.push({
         type: 'forwarded',
         content: match[0],
         from: match[3],
@@ -91,16 +90,15 @@ function MessageContent({ content }: { content: string }) {
       });
       
       lastIndex = match.index + match[0].length;
-      forwardedIndex++;
     }
     
     // Add remaining text
-    if (lastIndex < text.length) {
-      segments.push({ type: 'text', content: text.slice(lastIndex) });
+    if (lastIndex < content.length) {
+      parsedSegments.push({ type: 'text', content: content.slice(lastIndex) });
     }
     
-    return segments;
-  };
+    return parsedSegments;
+  }, [content]);
 
   const toggleSection = (index: number) => {
     setExpandedSections(prev => {
@@ -114,7 +112,6 @@ function MessageContent({ content }: { content: string }) {
     });
   };
 
-  const segments = parseContent(content);
   let forwardedCounter = 0;
 
   return (
@@ -364,8 +361,17 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
   const { currentUser } = useCurrentUser();
   const { isSignedIn } = useIsSignedIn();
 
-  // Get image attachments for lightbox
-  const imageAttachments = mail?.attachments?.filter(a => a.type.startsWith('image/')) || [];
+  // Get image attachments for lightbox - memoized
+  const imageAttachments = useMemo(() => 
+    mail?.attachments?.filter(a => a.type.startsWith('image/')) || [], 
+    [mail?.attachments]
+  );
+
+  // Parse email thread once - memoized
+  const threadMessages = useMemo(() => 
+    mail ? parseEmailThread(mail) : [], 
+    [mail]
+  );
 
   const openLightbox = useCallback((index: number) => {
     setLightboxIndex(index);
@@ -813,8 +819,6 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                   </div>
                 );
               }
-
-              const threadMessages = parseEmailThread(mail);
 
               const chronologicalMessages = [...threadMessages].reverse();
 
