@@ -44,6 +44,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '../ui/dropdown-menu';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Textarea } from '../ui/textarea';
@@ -543,12 +550,14 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
   return (
     <div className="flex h-full max-h-full flex-col overflow-hidden">
       {/* Fixed Header Toolbar */}
-      <div className="flex-none flex items-center p-2 md:p-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
+      <div className="flex-none flex items-center p-2 md:p-4 gap-2 md:gap-3">
+        <Button variant="ghost" size="icon" onClick={onBack} className="h-10 w-10 md:h-9 md:w-9">
           <ArrowLeft className="h-5 w-5" />
           <span className="sr-only">Back</span>
         </Button>
-        <div className="flex items-center gap-1 md:gap-2">
+        
+        {/* Desktop toolbar - visible on md and up */}
+        <div className="hidden md:flex items-center gap-3">
           <TooltipProvider delayDuration={0}>
             {emailStatus.deleted ? (
               <Tooltip>
@@ -556,12 +565,12 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                   <Button variant="ghost" size="icon" onClick={() => {
                     restoreFromTrash(mail.id);
                     if (onBack) onBack();
-                  }}>
+                  }} className="h-10 w-10 md:h-9 md:w-9">
                     <Reply className="h-4 w-4" />
                     <span className="sr-only">Restore</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Restore from Trash</TooltipContent>
+                <TooltipContent side={isMobile ? "bottom" : "bottom"}>Restore from Trash</TooltipContent>
               </Tooltip>
             ) : emailStatus.archived ? (
               <Tooltip>
@@ -569,86 +578,148 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                   <Button variant="ghost" size="icon" onClick={() => {
                     removeFromArchive(mail.id);
                     if (onBack) onBack();
-                  }}>
+                  }} className="h-10 w-10 md:h-9 md:w-9">
                     <Reply className="h-4 w-4" />
                     <span className="sr-only">Restore</span>
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Restore from Archive</TooltipContent>
+                <TooltipContent side={isMobile ? "bottom" : "bottom"}>Restore from Archive</TooltipContent>
               </Tooltip>
             ) : (
               <>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleMarkAsRead}>
+                    <Button variant="ghost" size="icon" onClick={handleMarkAsRead} className="h-10 w-10 md:h-9 md:w-9">
                       {emailStatus.read ? <MailOpen className="h-4 w-4" /> : <MailIcon className="h-4 w-4" />}
                       <span className="sr-only">{emailStatus.read ? 'Mark as Unread' : 'Mark as Read'}</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>{emailStatus.read ? 'Mark as Unread' : 'Mark as Read'}</TooltipContent>
+                  <TooltipContent side={isMobile ? "bottom" : "bottom"}>{emailStatus.read ? 'Mark as Unread' : 'Mark as Read'}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleArchive}>
+                    <Button variant="ghost" size="icon" onClick={handleArchive} className="h-10 w-10 md:h-9 md:w-9">
                       <Archive className="h-4 w-4" />
                       <span className="sr-only">Archive</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Archive</TooltipContent>
+                  <TooltipContent side={isMobile ? "bottom" : "bottom"}>Archive</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleSpam}>
+                    <Button variant="ghost" size="icon" onClick={handleSpam} className="h-10 w-10 md:h-9 md:w-9">
                       <AlertCircle className="h-4 w-4" />
                       <span className="sr-only">Mark as Spam</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Mark as Spam</TooltipContent>
+                  <TooltipContent side={isMobile ? "bottom" : "bottom"}>Mark as Spam</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleDelete}>
+                    <Button variant="ghost" size="icon" onClick={handleDelete} className="h-10 w-10 md:h-9 md:w-9">
                       <Trash className="h-4 w-4" />
                       <span className="sr-only">Delete</span>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Delete</TooltipContent>
+                  <TooltipContent side={isMobile ? "bottom" : "bottom"}>Delete</TooltipContent>
                 </Tooltip>
                 <ComposeDialog initialData={getForwardData()}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="h-10 w-10 md:h-9 md:w-9">
                         <Forward className="h-4 w-4" />
                         <span className="sr-only">Forward</span>
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Forward</TooltipContent>
+                    <TooltipContent side="bottom">Forward</TooltipContent>
                   </Tooltip>
                 </ComposeDialog>
               </>
             )}
           </TooltipProvider>
         </div>
-        <div className="ml-auto flex items-center gap-2">
-          <Button variant="ghost" size="icon" disabled={!mail}>
-            <MoreVertical className="h-4 w-4" />
-            <span className="sr-only">More</span>
-          </Button>
+        
+        {/* Mobile dropdown menu - visible on md and down */}
+        <div className="md:hidden ml-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-10 w-10">
+                <MoreVertical className="h-5 w-5" />
+                <span className="sr-only">More actions</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {emailStatus.deleted ? (
+                <DropdownMenuItem onClick={() => {
+                  restoreFromTrash(mail.id);
+                  if (onBack) onBack();
+                }}>
+                  <Reply className="h-4 w-4 mr-2" />
+                  Restore from Trash
+                </DropdownMenuItem>
+              ) : emailStatus.archived ? (
+                <DropdownMenuItem onClick={() => {
+                  removeFromArchive(mail.id);
+                  if (onBack) onBack();
+                }}>
+                  <Reply className="h-4 w-4 mr-2" />
+                  Restore from Archive
+                </DropdownMenuItem>
+              ) : (
+                <>
+                  <DropdownMenuItem onClick={handleMarkAsRead}>
+                    {emailStatus.read ? (
+                      <>
+                        <MailIcon className="h-4 w-4 mr-2" />
+                        Mark as Unread
+                      </>
+                    ) : (
+                      <>
+                        <MailOpen className="h-4 w-4 mr-2" />
+                        Mark as Read
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleArchive}>
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleSpam}>
+                    <AlertCircle className="h-4 w-4 mr-2" />
+                    Mark as Spam
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDelete}>
+                    <Trash className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <ComposeDialog initialData={getForwardData()}>
+                    <div className="flex items-center px-2 py-1.5 text-sm cursor-pointer hover:bg-accent rounded-sm">
+                      <Forward className="h-4 w-4 mr-2" />
+                      Forward
+                    </div>
+                  </ComposeDialog>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <Separator className="flex-none" />
       
       {/* Scrollable Message Content */}
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="flex items-start p-4">
-            <div className="flex w-full items-start gap-4 text-sm">
-              <Avatar>
+        {/* Sender Info Card */}
+        <div className="bg-muted/50 border-b">
+          <div className="flex items-start p-3 md:p-4">
+            <div className="flex w-full items-start gap-3 text-sm">
+              <Avatar className="h-10 w-10 md:h-12 md:w-12 flex-shrink-0">
                 <AvatarImage
                   alt={mail.name}
                   src={userAvatar?.imageUrl}
                   data-ai-hint={userAvatar?.imageHint}
                 />
-                <AvatarFallback>
+                <AvatarFallback className="text-xs md:text-sm">
                   {mail.name
                     .split(' ')
                     .map((chunk) => chunk[0])
@@ -656,23 +727,26 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                 </AvatarFallback>
               </Avatar>
               <div className="grid gap-1 min-w-0 flex-1">
-                <div className="font-semibold truncate">{mail.name}</div>
-              <div className="line-clamp-1 text-xs text-muted-foreground truncate">
-                Reply-to: {mail.email}
+                <div className="font-semibold truncate text-base md:text-lg">{mail.name}</div>
+                <div className="line-clamp-1 text-xs md:text-sm text-muted-foreground truncate">
+                  {mail.email}
+                </div>
               </div>
             </div>
-            <div className="ml-auto text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
-              {format(mailDate, "MMM d, yyyy, h:mm a")}
-            </div>
+          </div>
+          <div className="px-3 md:px-4 pb-3 md:pb-4 text-xs md:text-sm text-muted-foreground">
+            {format(mailDate, "PPP, p")}
           </div>
         </div>
-        <div className="p-4 pt-0">
-          <h1 className="text-xl md:text-2xl font-bold break-words">{mail.subject}</h1>
+
+        {/* Subject */}
+        <div className="p-3 md:p-4 border-b">
+          <h1 className="text-lg md:text-2xl font-bold break-words">{mail.subject}</h1>
           {mail.inReplyTo && (
-            <div className="mt-2">
+            <div className="mt-3">
               <Button
                 variant="link"
-                className="p-0 h-auto text-muted-foreground text-xs"
+                className="p-0 h-auto text-muted-foreground text-xs md:text-sm"
                 onClick={() => onNavigateToMail?.(mail.inReplyTo!)}
               >
                 In reply to a message
@@ -682,7 +756,7 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
         </div>
 
         {mail.hasCryptoTransfer && (
-          <div className="mx-4 mb-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
+          <div className="mx-2 mb-2 p-3 md:mx-3 md:mb-3 bg-primary/10 rounded-lg border border-primary/20">
             {(() => {
               const isDirectTransfer = mail.body.includes('✅ Assets have been transferred directly');
               const claimCodeMatch = mail.body.match(/Your Claim Code: (\d{3} \d{3})|claim code: (\d{6})/i);
@@ -743,7 +817,7 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
         )}
 
         {mail && (
-          <div className="flex-1 p-4 pt-0 space-y-6">
+          <div className="flex-1 p-2 pt-0 md:p-3 md:pt-0 space-y-4 md:space-y-6">
             {(() => {
               // Check if the mail body is HTML
               if (isLikelyHtml(mail.body)) {
@@ -759,7 +833,7 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
                 });
 
                 return (
-                  <div className="rounded-xl border p-4 shadow-sm bg-card text-card-foreground border-slate-200">
+                  <div className="rounded-xl border p-3 shadow-sm bg-card text-card-foreground border-slate-200">
                     {/* Header for HTML email same as thread latest message */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -1067,25 +1141,25 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
       </div>
 
       {/* Fixed Reply Box */}
-      <div className="flex-none border-t bg-background p-3 md:p-4">
+      <div className="flex-none border-t bg-background p-2 md:p-4">
         <div className="relative">
           <Textarea
-            className="pr-12 min-h-[60px] resize-none"
+            className="pr-12 md:pr-14 min-h-[80px] md:min-h-[60px] resize-none text-base md:text-sm"
             placeholder={`Reply to ${mail.name}...`}
             value={replyBody}
             onChange={(e) => setReplyBody(e.target.value)}
-            rows={2}
+            rows={isMobile ? 3 : 2}
           />
           <Button 
             size="icon" 
-            className="absolute right-2 bottom-2 h-8 w-8"
+            className="absolute right-2 bottom-2 md:right-3 md:bottom-3 h-10 w-10 md:h-8 md:w-8"
             onClick={handleReply} 
             disabled={isSendingReply}
           >
             {isSendingReply ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 md:h-4 md:w-4 animate-spin" />
             ) : (
-              <Send className="h-4 w-4" />
+              <Send className="h-5 w-5 md:h-4 md:w-4" />
             )}
           </Button>
         </div>
