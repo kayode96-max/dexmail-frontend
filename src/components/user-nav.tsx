@@ -29,7 +29,12 @@ export function UserNav() {
 
   const displayAddress = user?.walletAddress || address;
 
-  const { data: name } = useName({ address: displayAddress as `0x${string}`, chain: base });
+  const { data: name } = useName({ 
+    address: displayAddress as `0x${string}`, 
+    chain: base,
+  }, {
+    enabled: !!displayAddress,
+  });
 
   const walletText = name || (displayAddress
     ? `${displayAddress.slice(0, 6)}...${displayAddress.slice(-4)}`

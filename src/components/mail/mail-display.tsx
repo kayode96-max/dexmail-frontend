@@ -1067,7 +1067,7 @@ export function MailDisplay({ mail, onBack, onNavigateToMail }: MailDisplayProps
       </div>
 
       {/* Fixed Reply Box */}
-      <div className="flex-none border-t bg-background p-3 md:p-4 pb-20 md:pb-4">
+      <div className="flex-none border-t bg-background p-3 md:p-4">
         <div className="relative">
           <Textarea
             className="pr-12 min-h-[60px] resize-none"

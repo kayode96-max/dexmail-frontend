@@ -184,37 +184,6 @@ function Header({ selectedMailIds, onDelete, onArchive, onSpam, onRestore, onAdd
 }
 
 import { useAuth } from '@/contexts/auth-context';
-
-function MobileHeader() {
-  const { user, logout } = useAuth();
-  const { address: wagmiAddress } = useAccount();
-
-  // Prioritize user.walletAddress for embedded wallets
-  const displayAddress = user?.walletAddress || wagmiAddress;
-
-  const userAvatar = PlaceHolderImages.find(
-    (img) => img.id === 'user-avatar-1'
-  );
-
-  const formattedEmail = (() => {
-    const email = user?.email || 'User';
-    const parts = email.split('@');
-    if (parts.length !== 2) return email;
-    const [name, domain] = parts;
-    if (name.length <= 4) return email;
-    return `${name.slice(0, 4)}...@${domain}`;
-  })();
-
-  return (
-    <header className="md:hidden fixed top-0 z-10 flex h-16 items-center justify-between gap-2 shadow-md bg-background px-4 w-full">
-      <div className="relative flex-1">
-        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search..." className="bg-muted pl-8 h-10 rounded-full" />
-      </div>     
-    </header>
-  );
-}
-
 import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 
 // ... (imports remain the same)
@@ -292,8 +261,7 @@ export function MailComponent({
   if (isMobile) {
     return (
       <div className="flex flex-col h-full w-full bg-background">
-        <MobileHeader />
-        <div className="mt-16 flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col pt-16">
           <div className="px-4 py-2">
             <Tabs value={activeCategory === 'sent' ? 'sent' : 'all'} onValueChange={(val) => setActiveCategory(val as any)} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
