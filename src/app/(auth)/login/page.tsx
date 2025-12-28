@@ -483,7 +483,7 @@ export default function LoginPage() {
                             <Input
                               id="embedded-email"
                               type="email"
-                              placeholder="m@example.com"
+                              placeholder="email@example.com"
                               value={embeddedEmail}
                               onChange={(e) => {
                                 setEmbeddedEmail(e.target.value);

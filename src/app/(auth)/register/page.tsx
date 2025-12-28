@@ -406,7 +406,7 @@ export default function RegisterPage() {
                         <Input
                           id="embedded-email"
                           type="email"
-                          placeholder="you@example.com"
+                          placeholder="email@example.com"
                           value={embeddedEmail}
                           onChange={(e) => {
                             setEmbeddedEmail(e.target.value);
