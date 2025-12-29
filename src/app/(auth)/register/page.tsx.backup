@@ -403,7 +403,7 @@ export default function RegisterPage() {
                         <Input
                           id="embedded-email"
                           type="email"
-                          placeholder="you@example.com"
+                          placeholder="email@example.com"
                           className="h-12 bg-white border-slate-200 rounded-xl focus:border-slate-400 focus:ring-slate-400 text-black placeholder:text-slate-500"
                           style={{ colorScheme: 'light' }}
                           value={embeddedEmail}
