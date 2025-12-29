@@ -42,9 +42,18 @@ import Link from 'next/link';
 import { useMail } from '@/contexts/mail-context';
 import { Tag, RotateCcw, RefreshCw } from 'lucide-react';
 import { useMailLabels } from '@/hooks/use-mail-labels';
-import { useAccount } from 'wagmi'; // Added this import
+import { useAccount } from 'wagmi';
 import { ThemeToggle } from '../theme-toggle';
 import { useRouter } from 'next/navigation';
+import { Menu } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '../ui/sheet';
+import { SidebarNav } from '../sidebar-nav';
+import { AppLogo } from '../app-logo';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 
 interface HeaderProps {
   selectedMailIds: string[];
@@ -197,11 +206,6 @@ function Header({ selectedMailIds, onDelete, onArchive, onSpam, onRestore, onAdd
   );
 }
 
-import { useAuth } from '@/contexts/auth-context';
-import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
-
-// ... (imports remain the same)
-
 export function MailComponent({
   mails: initialMails,
   category = 'all',
@@ -217,6 +221,7 @@ export function MailComponent({
   const [searchQuery, setSearchQuery] = React.useState('');
   const isMobile = useIsMobile();
   const router = useRouter();
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   // Update activeCategory when prop changes
   useEffect(() => {
@@ -298,6 +303,40 @@ export function MailComponent({
   if (isMobile) {
     return (
       <div className="flex flex-col h-full w-full bg-background">
+        {/* Mobile Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="shrink-0">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] p-0">
+              <div className="p-4">
+                <AppLogo />
+              </div>
+              <div className="px-2">
+                <SidebarNav />
+              </div>
+            </SheetContent>
+          </Sheet>
+          
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 bg-muted/50 h-9"
+              />
+            </div>
+          </div>
+          
+          <ThemeToggle />
+        </div>
+
+        {/* Tabs */}
         <div className="px-4 py-2">
           <Tabs value={activeCategory === 'sent' ? 'sent' : 'all'} onValueChange={(val) => setActiveCategory(val as any)} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -306,6 +345,8 @@ export function MailComponent({
             </TabsList>
           </Tabs>
         </div>
+
+        {/* Mail List */}
         <div className="flex-1 w-full overflow-auto">
           {isLoading ? (
             <div className="flex justify-center p-4"><Loader2 className="animate-spin" /></div>
